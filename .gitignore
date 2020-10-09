@@ -33,3 +33,5 @@
 
 # Other
 /.vs
+/x64
+/OpenGL-Demo/x64
