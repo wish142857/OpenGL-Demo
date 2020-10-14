@@ -1,7 +1,7 @@
 #pragma once
 #ifndef SHADER_H
 #define SHADER_H
-#include "glad.h"
+#include <glad.h>
 #include <string>
 #include <fstream>
 #include <sstream>
@@ -14,7 +14,7 @@
 class Shader {
 public:
     GLuint ID; // 着色器程序 ID
-
+ 
     //---------
     // 构造函数
     //---------
