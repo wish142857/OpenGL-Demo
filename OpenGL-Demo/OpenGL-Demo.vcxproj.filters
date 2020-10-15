@@ -35,16 +35,10 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="khrplatform.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="shader.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="stb_image.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="glad.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="camera.hpp">
