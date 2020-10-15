@@ -1,6 +1,7 @@
 #pragma once
-#ifndef SHADER_H
-#define SHADER_H
+#ifndef SHADER_HPP
+#define SHADER_HPP
+
 #include <glad.h>
 #include <string>
 #include <fstream>
@@ -10,9 +11,15 @@
 
 /********************
  * [类] 着色器类
+ * 传入着色器代码文件路径
+ * 读取、编译创建着色器程序
+ * 提供 Uniform 设置接口
  ********************/
 class Shader {
 public:
+    //---------
+    // 成员属性
+    //---------
     GLuint ID; // 着色器程序 ID
  
     //---------
