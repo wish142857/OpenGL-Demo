@@ -133,7 +133,7 @@ public:
     // 处理鼠标滚轮函数
     //-----------------
     void processMouseScroll(float yoffset) {
-        zoom -= (float)yoffset;
+        zoom -= yoffset;
         if (zoom < 1.0f)
             zoom = 1.0f;
         else if (zoom > 45.0f)

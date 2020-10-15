@@ -191,7 +191,7 @@ int World::run() {
     // --------------------
     while (!glfwWindowShouldClose(window)) {
         // --- 计时器 ---
-        float currentFrame = glfwGetTime();
+        float currentFrame = float(glfwGetTime());
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
         // --- 处理输入 ---
@@ -288,14 +288,14 @@ void framebufferSizeCallback(GLFWwindow* window, int width, int height) {
 void mouseCallback(GLFWwindow* window, double xpos, double ypos) {
     World* world = World::getInstance();
     if (world->firstMouse) {
-        world->lastX = xpos;
-        world->lastY = ypos;
+        world->lastX = float(xpos);
+        world->lastY = float(ypos);
         world->firstMouse = false;
     }
-    float xoffset = xpos - world->lastX;
-    float yoffset = world->lastY - ypos;
-    world->lastX = xpos;
-    world->lastY = ypos;
+    float xoffset = float(xpos) - world->lastX;
+    float yoffset = world->lastY - float(ypos);
+    world->lastX = float(xpos);
+    world->lastY = float(ypos);
     world->camera->processMouseMovement(xoffset, yoffset);
     return;
 }
@@ -305,6 +305,6 @@ void mouseCallback(GLFWwindow* window, double xpos, double ypos) {
  ********************/
 void scrollCallback(GLFWwindow* window, double xoffset, double yoffset) {
     World* world = World::getInstance();
-    world->camera->processMouseScroll(yoffset);
+    world->camera->processMouseScroll(float(yoffset));
     return;
 }
