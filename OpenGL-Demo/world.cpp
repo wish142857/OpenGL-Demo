@@ -46,18 +46,21 @@ int World::run() {
     // [glad] 创建并编译着色器程序
     // ---------------------------
     shader = new Shader(SHADER_VS_PATH.c_str(), SHADER_FS_PATH.c_str());
-    // ----------------
-    // 创建并初始化相机
-    // ----------------
-    camera = new Camera(glm::vec3(0.0f, 0.0f, 3.0f));
+    // ----------
+    // 程序初始化
+    // ----------
+    // - 初始化 stb_image -
+    stbi_set_flip_vertically_on_load(true);
+    // - 创建并初始化相机 -
+    camera = new Camera(glm::vec3(0.0f, 10.0f, 20.0f));
     lastX = SCR_WIDTH / 2.0f;
     lastY = SCR_HEIGHT / 2.0f;
     firstMouse = true;
-    // ------------
-    // 初始化计时器
-    // ------------
+    // - 初始化计时器 -
     deltaTime = 0.0f;
     lastFrame = 0.0f;
+    
+    /*
     // set up vertex data (and buffer(s)) and configure vertex attributes
     // ------------------------------------------------------------------
     float vertices[] = {
@@ -132,7 +135,6 @@ int World::run() {
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
 
-
     // load and create a texture 
     // -------------------------
     unsigned int texture1, texture2;
@@ -185,6 +187,9 @@ int World::run() {
     shader->use();
     shader->setInt("texture1", 0);
     shader->setInt("texture2", 1);
+    */
+
+    Model ourModel("resources/objects/nanosuit/nanosuit.obj");
 
     // --------------------
     // [glfw/glad] 渲染循环
@@ -194,43 +199,27 @@ int World::run() {
         float currentFrame = float(glfwGetTime());
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
-        // --- 处理输入 ---
+        // - 处理输入 -
         processInput(window);
-        // --- 开始渲染 ---
         // - 清空缓冲 -
-        glClearColor(0.2f, 0.3f, 0.3f, 1.0f);               // 设置清空填充颜色
+        glClearColor(0.5f, 0.5f, 0.5f, 1.0f);            // 设置清空填充颜色
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // 清空颜色缓冲、深度缓冲
-
-         // bind textures on corresponding texture units
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, texture1);
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, texture2);
-
         // - 激活着色器 -
         shader->use();
-
-        // pass projection matrix to shader (note that in this case it could change every frame)
+        // --- 开始渲染 ---
+        // view/projection transformations
         glm::mat4 projection = glm::perspective(glm::radians(camera->zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
-        shader->setMat4("projection", projection);
-
-        // camera/view transformation
         glm::mat4 view = camera->getViewMatrix();
+        shader->setMat4("projection", projection);
         shader->setMat4("view", view);
 
-        // render boxes
-        glBindVertexArray(VAO);
-        for (unsigned int i = 0; i < 10; i++)
-        {
-            // calculate the model matrix for each object and pass it to shader before drawing
-            glm::mat4 model = glm::mat4(1.0f); // make sure to initialize matrix to identity matrix first
-            model = glm::translate(model, cubePositions[i]);
-            float angle = 20.0f * i;
-            model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
-            shader->setMat4("model", model);
-
-            glDrawArrays(GL_TRIANGLES, 0, 36);
-        }
+        // render the loaded model
+        glm::mat4 model = glm::mat4(1.0f);
+        model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f)); // translate it down so it's at the center of the scene
+        model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));	// it's a bit too big for our scene, so scale it down
+        shader->setMat4("model", model);
+        ourModel.drawModel(*shader);
+        // --- 渲染完毕 ---
 
         // - 交换颜色缓冲 -
         glfwSwapBuffers(window);

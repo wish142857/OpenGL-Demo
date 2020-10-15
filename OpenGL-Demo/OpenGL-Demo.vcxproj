@@ -78,7 +78,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>.\includes;$(IncludePath)</IncludePath>
+    <IncludePath>.\include;$(IncludePath)</IncludePath>
     <LibraryPath>.\libs;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -118,7 +118,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>.;.\glm;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\includes;.;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -156,6 +156,7 @@
   <ItemGroup>
     <ClInclude Include="camera.hpp" />
     <ClInclude Include="mesh.hpp" />
+    <ClInclude Include="model.hpp" />
     <ClInclude Include="shader.hpp" />
     <ClInclude Include="stb_image.h" />
     <ClInclude Include="world.h" />

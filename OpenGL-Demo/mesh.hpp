@@ -9,8 +9,6 @@
 #include <vector>
 #include "shader.hpp"
 
-using namespace std;
-
 
 /********************
  * [结构] 顶点结构体
@@ -36,9 +34,9 @@ struct Texture {
     // - ID -
     GLuint id;
     // - 类型 -
-    string type;
+    std::string type;
     // - 路径 -
-    string path;
+    std::string path;
 };
 
 
@@ -50,15 +48,15 @@ public:
     //-------
     // 类变量
     //-------
-    vector<Vertex> vertices;    // 顶点列表
-    vector<GLuint> indices;     // 索引列表
-    vector<Texture> textures;   // 纹理列表
+    std::vector<Vertex> vertices;    // 顶点列表
+    std::vector<GLuint> indices;     // 索引列表
+    std::vector<Texture> textures;   // 纹理列表
     GLuint VAO; // 顶点数组对象
 
     //---------
     // 构造函数
     //---------
-    Mesh(vector<Vertex> vertices, vector<unsigned int> indices, vector<Texture> textures) {
+    Mesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices, std::vector<Texture> textures) {
         this->vertices = vertices;
         this->indices = indices;
         this->textures = textures;
@@ -77,8 +75,8 @@ public:
         unsigned int heightNr = 1;
         for (unsigned int i = 0; i < textures.size(); i++) {
             glActiveTexture(GL_TEXTURE0 + i);
-            string number;
-            string name = textures[i].type;
+            std::string number;
+            std::string name = textures[i].type;
             if (name == "texture_diffuse")
                 number = std::to_string(diffuseNr++);
             else if (name == "texture_specular")
@@ -92,7 +90,7 @@ public:
         }
         // 绘制网格
         glBindVertexArray(VAO);
-        glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
+        glDrawElements(GL_TRIANGLES, GLsizei(indices.size()), GL_UNSIGNED_INT, 0);
         glBindVertexArray(0);
         glActiveTexture(GL_TEXTURE0);
         return;
