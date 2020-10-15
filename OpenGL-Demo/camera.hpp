@@ -37,9 +37,9 @@ enum class CameraMovement {
  ********************/
 class Camera {
 public:
-    //---------
-    // 成员属性
-    //---------
+    //-------
+    // 类变量
+    //-------
     // - 相机属性 -
     glm::vec3 position;     // 位置向量
     glm::vec3 front;        // 前向量
