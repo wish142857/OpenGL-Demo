@@ -24,6 +24,9 @@
     <ClCompile Include="glad.c">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="world.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -42,6 +45,9 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="camera.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="world.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

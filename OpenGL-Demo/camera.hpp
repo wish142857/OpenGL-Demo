@@ -111,7 +111,7 @@ public:
     //-----------------
     // 处理鼠标移动函数
     //-----------------
-    void ProcessMouseMovement(float xoffset, float yoffset, GLboolean constrainPitch = true) {
+    void processMouseMovement(float xoffset, float yoffset, GLboolean constrainPitch = true) {
         xoffset *= sensitivity;
         yoffset *= sensitivity;
 
@@ -132,7 +132,7 @@ public:
     //-----------------
     // 处理鼠标滚轮函数
     //-----------------
-    void ProcessMouseScroll(float yoffset) {
+    void processMouseScroll(float yoffset) {
         zoom -= (float)yoffset;
         if (zoom < 1.0f)
             zoom = 1.0f;
