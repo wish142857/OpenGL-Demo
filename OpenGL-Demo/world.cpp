@@ -50,9 +50,9 @@ int World::run() {
     // 程序初始化
     // ----------
     // - 初始化 stb_image -
-    stbi_set_flip_vertically_on_load(true);
+    stbi_set_flip_vertically_on_load(false);
     // - 创建并初始化相机 -
-    camera = new Camera(glm::vec3(0.0f, 10.0f, 20.0f));
+    camera = new Camera(glm::vec3(0.0f, 0.0f, 5.0f));
     lastX = SCR_WIDTH / 2.0f;
     lastY = SCR_HEIGHT / 2.0f;
     firstMouse = true;
@@ -189,7 +189,7 @@ int World::run() {
     shader->setInt("texture2", 1);
     */
 
-    Model ourModel("resources/objects/nanosuit/nanosuit.obj");
+    Model ourModel("resources/objects/bag/treasure_chest.obj");
 
     // --------------------
     // [glfw/glad] 渲染循环

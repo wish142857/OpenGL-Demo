@@ -54,6 +54,9 @@ public:
     }
 
 private:
+    //-------------
+    // 模型加载函数
+    //-------------
     // loads a model with supported ASSIMP extensions from file and stores the resulting meshes in the meshes vector.
     void loadModel(std::string const& path) {
         // read file via ASSIMP
@@ -88,6 +91,9 @@ private:
 
     }
 
+    //-------------
+    // 网格处理函数
+    //-------------
     Mesh processMesh(aiMesh* mesh, const aiScene* scene) {
         // data to fill
         std::vector<Vertex> vertices;
@@ -170,6 +176,9 @@ private:
         return Mesh(vertices, indices, textures);
     }
 
+    //-------------
+    // 纹理加载函数
+    //-------------
     // checks all material textures of a given type and loads the textures if they're not loaded yet.
     // the required info is returned as a Texture struct.
     std::vector<Texture> loadMaterialTextures(aiMaterial* mat, aiTextureType type, std::string typeName)
@@ -205,10 +214,12 @@ private:
 };
 
 
+//--------------------------
+// [函数] 从文件加载纹理函数
+//--------------------------
 static unsigned int TextureFromFile(const char* path, const std::string& directory, bool gamma) {
     std::string filename = std::string(path);
     filename = directory + '/' + filename;
-
     unsigned int textureID;
     glGenTextures(1, &textureID);
 
@@ -236,7 +247,7 @@ static unsigned int TextureFromFile(const char* path, const std::string& directo
         stbi_image_free(data);
     }
     else {
-        std::cout << "Texture failed to load at path: " << path << std::endl;
+        std::cout << "ERROR::Texture failed to load at path: " << path << std::endl;
         stbi_image_free(data);
     }
 
