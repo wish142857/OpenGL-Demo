@@ -19,11 +19,10 @@
 /********************
  * [常量] 常量定义
  ********************/
-const unsigned int SCR_WIDTH = 800;
-const unsigned int SCR_HEIGHT = 600;
-const std::string SHADER_VS_PATH = "shader.vs";
-const std::string SHADER_FS_PATH = "shader.fs";
-
+const std::string SHADER_VS_PATH = "shader/shader.vs";
+const std::string SHADER_FS_PATH = "shader/shader.fs";
+const std::string SKYBOX_SHADER_VS_PATH = "shader/skybox.vs";
+const std::string SKYBOX_SHADER_FS_PATH = "shader/skybox.fs";
 
 /********************
  * [类] 世界类
@@ -32,26 +31,36 @@ const std::string SHADER_FS_PATH = "shader.fs";
  ********************/
 class World {
 public:
-	// - 着色器 -
-	Shader* shader;		// 着色器对象指针
 	// - 摄像机 -
-	Camera *camera;		// 摄像机对象指针
+	Camera* camera;		// 摄像机对象指针
 	float lastX;
 	float lastY;
 	bool firstMouse;
+	// - 着色器 -
+	Shader* objectShader;	// 物体着色器对象指针
+	Shader* skyboxShader;	// 天空盒着色器对象指针
 	// - 计时器 -
 	float deltaTime;
 	float lastFrame;
 	// - 顶点数据 -
 	GLuint VAO, VBO;
-
 	// - 接口函数 -
 	static World* getInstance() { return &World::world; }
 	int run();
 private:
+	// - 构造函数 -
+	World() : camera(nullptr), lastX(0), lastY(0), firstMouse(false), 
+		objectShader(nullptr), skyboxShader(nullptr) , deltaTime(0), lastFrame(0), 
+		VAO(0), VBO(0), sreenWidth(1280), sreenHeight(960) { }
+	// - 私有函数 -
 	static World world;
-	World() : shader(nullptr), camera(nullptr), lastX(0), lastY(0), firstMouse(false), deltaTime(0), lastFrame(0), VAO(0), VBO(0) { }
-	void processInput(GLFWwindow* window);	// 输入处理函数
+	unsigned int sreenWidth;
+	unsigned int sreenHeight;
+	// - 私有函数 -
+	void processInput(GLFWwindow* window);				// 输入处理函数
+	GLuint loadTexture(const char* path);				// 纹理加载函数
+	GLuint loadCubemap(std::vector<std::string> faces);	// 立方体贴图加载函数
+
 };
 
 extern void framebufferSizeCallback(GLFWwindow* window, int width, int height);	// 窗口尺寸回调函数

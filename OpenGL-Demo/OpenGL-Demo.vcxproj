@@ -154,8 +154,10 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
-    <None Include="shader.fs" />
-    <None Include="shader.vs" />
+    <None Include="shader\shader.fs" />
+    <None Include="shader\shader.vs" />
+    <None Include="shader\skybox.fs" />
+    <None Include="shader\skybox.vs" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="camera.hpp" />
