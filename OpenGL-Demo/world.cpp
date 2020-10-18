@@ -68,11 +68,46 @@ int World::run() {
     // ---------------
     // [glad] 加载模型
     // ---------------
-    Model modelBird1("resources/objects/bird/1/1.obj");
-    Model modelBird2("resources/objects/bird/2/2.obj");
-    Model modelFlight("resources/objects/flight/F-35_Lightning_II/F-35_Lightning_II.obj");
-    float skyboxVertices[] = {
-        // positions          
+    objects.clear();
+    {
+        // - 加载鸟1 -
+        glm::mat4 model = glm::mat4(1.0f);
+        // model = glm::translate(model, glm::vec3(0.0f, 10.0f, 0.0f));
+        model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+        model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
+        Object *object = new Object("小鸟 1 号", "resources/objects/bird/1/1.obj", model, 
+            glm::vec3(-0.4f, -0.2f, -0.6f), glm::vec3(0.4f, 0.2f, 0.6f));
+        objects.push_back(object);
+        // - 运动属性设置 -
+        object->moveVector = glm::vec3(0.0f, 1.8f, 0.0f);
+        object->accSpeedVetor.y = -0.2f;
+    }
+    {
+        // - 加载鸟2 -
+        glm::mat4 model = glm::mat4(1.0f);
+        // model = glm::translate(model, glm::vec3(0.0f, -10.0f, 0.0f));
+        model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+        model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
+        Object* object = new Object("小鸟 2 号", "resources/objects/bird/2/2.obj", model,
+            glm::vec3(-0.6f, -0.2f, -0.9f), glm::vec3(0.5f, 0.2f, 0.9f));
+        objects.push_back(object);
+        // - 运动属性设置 -
+        object->moveVector = glm::vec3(0.0f, -2.0f, 0.0f);
+        object->accSpeedVetor.y = 0.2f;
+    }
+    {
+        // - 加载飞机 -
+        glm::mat4 model = glm::mat4(1.0f);
+        // model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
+        model = glm::rotate(model, glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+        model = glm::rotate(model, glm::radians(-90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+        model = glm::scale(model, glm::vec3(0.8f, 0.8f, 0.8f));
+        Object* object = new Object("F-35 战斗机", "resources/objects/flight/F-35_Lightning_II/F-35_Lightning_II.obj", model, 
+            glm::vec3(-6.4f, -0.8f, -4.4f), glm::vec3(8.0f, 0.6f, 4.4f));
+        objects.push_back(object);
+        // - 运动属性设置 -
+    }
+    float skyboxVertices[] = {        
         -1.0f,  1.0f, -1.0f,
         -1.0f, -1.0f, -1.0f,
          1.0f, -1.0f, -1.0f,
@@ -115,7 +150,7 @@ int World::run() {
         -1.0f, -1.0f,  1.0f,
          1.0f, -1.0f,  1.0f
     };
-    // skybox VAO
+    // 天空盒 VAO
     unsigned int skyboxVAO, skyboxVBO;
     glGenVertexArrays(1, &skyboxVAO);
     glGenBuffers(1, &skyboxVBO);
@@ -141,6 +176,17 @@ int World::run() {
         float currentFrame = float(glfwGetTime());
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
+        // --- 处理运动 ---
+        for (Object* object : objects) {
+            object->move(deltaTime);
+            for (Object* target : objects)
+                if (object != target && object->checkCollision(*target)) { 
+                    object->unMove(deltaTime); 
+                    object->reverseSpeed();  
+                    std::cout << "World::Collision: " << object->name << "<->"  << target->name << std::endl;
+                    break; 
+                }
+        }
         // - 处理输入 -
         processInput(window);
         // - 清空缓冲 -
@@ -155,27 +201,8 @@ int World::run() {
         objectShader->setMat4("view", view);
         objectShader->setMat4("projection", projection);
         // - 渲染模型 -
-        glm::mat4 model = glm::mat4(1.0f);
-        model = glm::translate(model, glm::vec3(0.0f, 2.0f + sin((float)glfwGetTime()) / 4, 0.0f));
-        model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-        // model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
-        objectShader->setMat4("model", model);
-        modelBird1.drawModel(*objectShader);
-
-        model = glm::mat4(1.0f);
-        model = glm::translate(model, glm::vec3(0.0f, -2.0f + cos((float)glfwGetTime()) / 4, 0.0f));
-        model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-        // model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
-        objectShader->setMat4("model", model);
-        modelBird2.drawModel(*objectShader);
-
-        model = glm::mat4(1.0f);
-        model = glm::translate(model, glm::vec3(0.0f, 0, 0.0f));
-        model = glm::rotate(model, glm::radians(-90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-        model = glm::rotate(model, glm::radians(-90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-        model = glm::scale(model, glm::vec3(0.8f, 0.8f, 0.8f));
-        objectShader->setMat4("model", model);
-        modelFlight.drawModel(*objectShader);
+        for (Object* object : objects)
+            object->draw(*objectShader);
         // - 渲染天空盒 -
         glDepthFunc(GL_LEQUAL);  // change depth function so depth test passes when values are equal to depth buffer's content
         skyboxShader->use();
@@ -189,7 +216,6 @@ int World::run() {
         glBindVertexArray(0);
         glDepthFunc(GL_LESS); // set depth function back to default
         // --- 渲染完毕 ---
-
         // - 交换颜色缓冲 -
         glfwSwapBuffers(window);
         // - 检查触发事件 -
@@ -204,10 +230,15 @@ int World::run() {
     // [glfw] 销毁窗口
     // ---------------
     glfwTerminate();
-
+    for (Object* object : objects)
+        if (object)
+            delete object;
+    objects.clear();
     delete camera;
     delete objectShader;
     delete skyboxShader;
+    camera = nullptr;
+    objectShader = skyboxShader = nullptr;
     return 0;
 }
 
@@ -215,9 +246,24 @@ int World::run() {
  * [函数] 输入处理函数
  ********************/
 void World::processInput(GLFWwindow* window) {
+    static bool bCameraPrint = true;
+
     // --- ESC 键按下 ---
-    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
         glfwSetWindowShouldClose(window, true); // 设置窗口关闭标记
+    }
+    // --- SPACE 键按下 ---
+    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
+        // 打印摄像头坐标
+        Camera *camera = World::getInstance()->camera;
+        if (camera && bCameraPrint) {
+            std::cout << "World::Current camera postion: (" << camera->position.x << "," << camera->position.y << "," << camera->position.z << ")" << std::endl;
+            bCameraPrint = false;
+        }
+    }
+    else {
+        bCameraPrint = true;
+    }
     // --- W 键按下 ---
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
         camera->processKeyboard(CameraMovement::FORWARD, deltaTime);

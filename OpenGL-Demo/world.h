@@ -24,23 +24,74 @@ const std::string SHADER_FS_PATH = "shader/shader.fs";
 const std::string SKYBOX_SHADER_VS_PATH = "shader/skybox.vs";
 const std::string SKYBOX_SHADER_FS_PATH = "shader/skybox.fs";
 
-/********************
- * [结构] 世界3D点
- ********************/
-struct WorldPoint {
-	float x;
-	float y;
-	float z;
-	WorldPoint(float x = 0, float y = 0, float z = 0) : x(x), y(y), z(y) { }
-};
 
 /********************
- * [结构] 世界3D包围盒
+ * [类] 物体类
  ********************/
-struct WorldBox {
+class Object {
+public:
+	// - 动态变量 -
+	std::string name;			// 物体名称
+	glm::vec3 moveVector;		// 位移向量	
+	glm::vec3 speedVetor;		// 速度向量
+	glm::vec3 accSpeedVetor;	// 加速度向量
+	// - 构造函数 -
+	Object(const std::string& name, const std::string &path, const glm::mat4 &modelMatrix, const glm::vec3 &minBoxPoint, const glm::vec3& maxBoxPoint)
+		: name(name), model(path), modelMatrix(modelMatrix), minBoxPoint(minBoxPoint), maxBoxPoint(maxBoxPoint) {
+		moveVector = speedVetor = accSpeedVetor = glm::vec3(0.0f);
+		return;
+	}
+	// - 渲染函数 -
+	void draw(Shader& shader) {
+		shader.setMat4("model", glm::translate(modelMatrix, moveVector));
+		model.drawModel(shader);
+		return;
+	}
+	// - 运动 运动函数 -
+	void move(float deltaTime) {
+		moveVector += speedVetor * deltaTime;
+		speedVetor += accSpeedVetor * deltaTime;
+		return;
+	}
+	void unMove(float deltaTime) {
+		speedVetor -= accSpeedVetor * deltaTime;
+		moveVector -= speedVetor * deltaTime;
+		return;
+	}
+	// - 运动 速度反转函数 -
+	void reverseSpeed() {
+		speedVetor = -speedVetor;
+		return;
+	}
+	// - 运动 碰撞检测函数 -
+	bool checkCollision(const glm::vec3& point) const {
+		glm::vec3 p = point - moveVector;
+		if (p.x < minBoxPoint.x) return false;
+		if (p.y < minBoxPoint.y) return false;
+		if (p.z < minBoxPoint.z) return false;
+		if (p.x > maxBoxPoint.x) return false;
+		if (p.y > maxBoxPoint.y) return false;
+		if (p.z > maxBoxPoint.z) return false;
+		return true;
+	}
+	bool checkCollision(const Object& object) const {
+		glm::vec3 minS = minBoxPoint + moveVector;
+		glm::vec3 maxS = maxBoxPoint + moveVector;
+		glm::vec3 minT = object.minBoxPoint + object.moveVector;
+		glm::vec3 maxT = object.maxBoxPoint + object.moveVector;
+		return ((minS.x >= minT.x && minS.x <= maxT.x) || (minT.x >= minS.x && minT.x <= maxS.x)) && 
+			((minS.y >= minT.y && minS.y <= maxT.y) || (minT.y >= minS.y && minT.y <= maxS.y)) &&
+			((minS.z >= minT.z && minS.z <= maxT.z) || (minT.z >= minS.z && minT.z <= maxS.z));
+	}
 
-
+private:
+	// - 静态变量 -
+	Model model;				// 模型对象
+	glm::mat4 modelMatrix;		// 模型矩阵（相对于原点）
+	glm::vec3 minBoxPoint;		// 包围盒最小XYZ点坐标（位于原点）
+	glm::vec3 maxBoxPoint;		// 包围盒最大XYZ点坐标（位于原点）
 };
+
 
 /********************
  * [类] 世界类
@@ -62,6 +113,8 @@ public:
 	float lastFrame;
 	// - 顶点数据 -
 	GLuint VAO, VBO;
+	// - 物体数据 -
+	std::vector<Object *> objects;
 	// - 接口函数 -
 	static World* getInstance() { return &World::world; }
 	int run();
