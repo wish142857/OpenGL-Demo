@@ -264,17 +264,17 @@ void World::processInput(GLFWwindow* window) {
     else {
         bCameraPrint = true;
     }
-    // --- W 键按下 ---
-    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+    // --- UP/W 键按下 ---
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
         camera->processKeyboard(CameraMovement::FORWARD, deltaTime);
-    // --- S 键按下 ---
-    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+    // --- DOWN/S 键按下 ---
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
         camera->processKeyboard(CameraMovement::BACKWARD, deltaTime);
-    // --- A 键按下 ---
-    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+    // --- LEFT/A 键按下 ---
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
         camera->processKeyboard(CameraMovement::LEFT, deltaTime);
-    // --- D 键按下 ---
-    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+    // --- RIGHT/D 键按下 ---
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
         camera->processKeyboard(CameraMovement::RIGHT, deltaTime);
     return;
 }
