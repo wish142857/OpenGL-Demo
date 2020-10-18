@@ -25,6 +25,24 @@ const std::string SKYBOX_SHADER_VS_PATH = "shader/skybox.vs";
 const std::string SKYBOX_SHADER_FS_PATH = "shader/skybox.fs";
 
 /********************
+ * [结构] 世界3D点
+ ********************/
+struct WorldPoint {
+	float x;
+	float y;
+	float z;
+	WorldPoint(float x = 0, float y = 0, float z = 0) : x(x), y(y), z(y) { }
+};
+
+/********************
+ * [结构] 世界3D包围盒
+ ********************/
+struct WorldBox {
+
+
+};
+
+/********************
  * [类] 世界类
  * 单例模式
  * OpenGL 3D 场景渲染

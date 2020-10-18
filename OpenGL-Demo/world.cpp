@@ -56,7 +56,7 @@ int World::run() {
     // 程序初始化
     // ----------
     // - 创建并初始化相机 -
-    camera = new Camera(glm::vec3(0.0f, 0.0f, 5.0f));
+    camera = new Camera(glm::vec3(0.0f, 0.0f, 12.0f));
     lastX = sreenWidth / 2.0f;
     lastY = sreenHeight / 2.0f;
     firstMouse = true;
@@ -68,8 +68,9 @@ int World::run() {
     // ---------------
     // [glad] 加载模型
     // ---------------
-    Model ourModel("resources/objects/test/1.obj");
-    Model ourModel2("resources/objects/bag/treasure_chest.obj");
+    Model modelBird1("resources/objects/bird/1/1.obj");
+    Model modelBird2("resources/objects/bird/2/2.obj");
+    Model modelFlight("resources/objects/flight/F-35_Lightning_II/F-35_Lightning_II.obj");
     float skyboxVertices[] = {
         // positions          
         -1.0f,  1.0f, -1.0f,
@@ -148,25 +149,33 @@ int World::run() {
         // - 激活着色器 -
         objectShader->use();
         // --- 开始渲染 ---
-        // view/projection transformations
-        glm::mat4 projection = glm::perspective(glm::radians(camera->zoom), (float)sreenWidth / (float)sreenHeight, 0.1f, 100.0f);
+        // - 设置观察/投影矩阵 -
         glm::mat4 view = camera->getViewMatrix();
-        objectShader->setMat4("projection", projection);
+        glm::mat4 projection = glm::perspective(glm::radians(camera->zoom), (float)sreenWidth / (float)sreenHeight, 0.1f, 100.0f);
         objectShader->setMat4("view", view);
-
-        // render the loaded model
+        objectShader->setMat4("projection", projection);
+        // - 渲染模型 -
         glm::mat4 model = glm::mat4(1.0f);
-        model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f)); // translate it down so it's at the center of the scene
-        //model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));	// it's a bit too big for our scene, so scale it down
+        model = glm::translate(model, glm::vec3(0.0f, 2.0f + sin((float)glfwGetTime()) / 4, 0.0f));
+        model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+        // model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
         objectShader->setMat4("model", model);
-        ourModel.drawModel(*objectShader);
-        // render the loaded model
-        model = glm::mat4(1.0f);
-        model = glm::translate(model, glm::vec3(0.0f, 1.0f, 0.0f)); // translate it down so it's at the center of the scene
-        //model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));	// it's a bit too big for our scene, so scale it down
-        objectShader->setMat4("model", model);
-        ourModel2.drawModel(*objectShader);
+        modelBird1.drawModel(*objectShader);
 
+        model = glm::mat4(1.0f);
+        model = glm::translate(model, glm::vec3(0.0f, -2.0f + cos((float)glfwGetTime()) / 4, 0.0f));
+        model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+        // model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
+        objectShader->setMat4("model", model);
+        modelBird2.drawModel(*objectShader);
+
+        model = glm::mat4(1.0f);
+        model = glm::translate(model, glm::vec3(0.0f, 0, 0.0f));
+        model = glm::rotate(model, glm::radians(-90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+        model = glm::rotate(model, glm::radians(-90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+        model = glm::scale(model, glm::vec3(0.8f, 0.8f, 0.8f));
+        objectShader->setMat4("model", model);
+        modelFlight.drawModel(*objectShader);
         // - 渲染天空盒 -
         glDepthFunc(GL_LEQUAL);  // change depth function so depth test passes when values are equal to depth buffer's content
         skyboxShader->use();
