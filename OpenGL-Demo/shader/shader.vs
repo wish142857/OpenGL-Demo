@@ -1,16 +1,25 @@
 #version 330 core
-layout (location = 0) in vec3 aPos;
-layout (location = 1) in vec3 aNormal;
-layout (location = 2) in vec2 aTexCoords;
+// - 输入变量 -
+layout (location = 0) in vec3 aPos;         // 局部坐标
+layout (location = 1) in vec3 aNormal;      // 法向量
+layout (location = 2) in vec2 aTexCoords;   // 纹理坐标
 
-out vec2 TexCoords;
+// - 输出变量 -
+out vec3 FragPos;           // 片段世界坐标
+out vec3 Normal;            // 片段法向量
+out vec2 TexCoords;         // 纹理坐标
 
-uniform mat4 model;
-uniform mat4 view;
-uniform mat4 projection;
+// - Uniform 变量 -
+uniform mat4 model;         // 模型矩阵
+uniform mat4 view;          // 观察矩阵
+uniform mat4 projection;    // 投影矩阵
 
+// - 主函数 -
 void main()
 {
-    TexCoords = aTexCoords;    
-    gl_Position = projection * view * model * vec4(aPos, 1.0);
+    FragPos = vec3(model * vec4(aPos, 1.0));            // 片段世界坐标
+    Normal = mat3(transpose(inverse(model))) * aNormal; // 片段法向量
+    TexCoords = aTexCoords;                             // 纹理坐标
+    
+    gl_Position = projection * view * vec4(FragPos, 1.0);   // 裁剪坐标
 }
