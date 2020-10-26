@@ -75,13 +75,14 @@ int World::run() {
         // model = glm::translate(model, glm::vec3(0.0f, 10.0f, 0.0f));
         model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
         model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
-        Object *object = new Object("小鸟 1 号", "resources/objects/bird/1/1.obj", model, 
+        Object *object = new Object("小鸟 1 号", "resources/objects/std/dragon_vrip.ply", model, 
             glm::vec3(-0.4f, -0.2f, -0.6f), glm::vec3(0.4f, 0.2f, 0.6f));
         objects.push_back(object);
         // - 运动属性设置 -
         object->moveVector = glm::vec3(0.0f, 1.8f, 0.0f);
         object->accSpeedVetor.y = -0.2f;
     }
+    /*
     {
         // - 加载鸟2 -
         glm::mat4 model = glm::mat4(1.0f);
@@ -107,6 +108,7 @@ int World::run() {
         objects.push_back(object);
         // - 运动属性设置 -
     }
+    */
     float skyboxVertices[] = {        
         -1.0f,  1.0f, -1.0f,
         -1.0f, -1.0f, -1.0f,
@@ -177,15 +179,17 @@ int World::run() {
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
         // --- 处理运动 ---
-        for (Object* object : objects) {
-            object->move(deltaTime);
-            for (Object* target : objects)
-                if (object != target && object->checkCollision(*target)) { 
-                    object->unMove(deltaTime); 
-                    object->reverseSpeed();  
-                    std::cout << "World::Collision: " << object->name << "<->"  << target->name << std::endl;
-                    break; 
-                }
+        if (W_DYNAMIC_AVAILABLE) {
+            for (Object* object : objects) {
+                object->move(deltaTime);
+                for (Object* target : objects)
+                    if (object != target && object->checkCollision(*target)) {
+                        object->unMove(deltaTime);
+                        object->reverseSpeed();
+                        std::cout << "World::Collision: " << object->name << "<->" << target->name << std::endl;
+                        break;
+                    }
+            }
         }
         // - 处理输入 -
         processInput(window);
@@ -204,17 +208,19 @@ int World::run() {
         for (Object* object : objects)
             object->draw(*objectShader);
         // - 渲染天空盒 -
-        glDepthFunc(GL_LEQUAL);  // change depth function so depth test passes when values are equal to depth buffer's content
-        skyboxShader->use();
-        view = glm::mat4(glm::mat3(camera->getViewMatrix())); // remove translation from the view matrix
-        skyboxShader->setMat4("view", view);
-        skyboxShader->setMat4("projection", projection);
-        glBindVertexArray(skyboxVAO);
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
-        glDrawArrays(GL_TRIANGLES, 0, 36);
-        glBindVertexArray(0);
-        glDepthFunc(GL_LESS); // set depth function back to default
+        if (W_SKYBOX_AVAILABLE) {
+            skyboxShader->use();
+            view = glm::mat4(glm::mat3(camera->getViewMatrix()));
+            skyboxShader->setMat4("view", view);
+            skyboxShader->setMat4("projection", projection);
+            glDepthFunc(GL_LEQUAL);
+            glBindVertexArray(skyboxVAO);
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
+            glDrawArrays(GL_TRIANGLES, 0, 36);
+            glBindVertexArray(0);
+            glDepthFunc(GL_LESS);
+        }
         // --- 渲染完毕 ---
         // - 交换颜色缓冲 -
         glfwSwapBuffers(window);

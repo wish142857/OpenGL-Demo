@@ -19,6 +19,8 @@
 /********************
  * [常量] 常量定义
  ********************/
+const bool W_DYNAMIC_AVAILABLE = false;
+const bool W_SKYBOX_AVAILABLE = true;
 const std::string SHADER_VS_PATH = "shader/shader.vs";
 const std::string SHADER_FS_PATH = "shader/shader.fs";
 const std::string SKYBOX_SHADER_VS_PATH = "shader/skybox.vs";
