@@ -2,12 +2,13 @@
 #ifndef RAY_H
 #define RAY_H
 #include <algorithm>
+#include <vector>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
 namespace RayTracing {
-	static const float FLOAT_INF = 100000000.0f;
+	static const float FLOAT_INF = 1e8;
 	static const float FLOAT_EPS = 1e-5;
 	static const glm::vec3 NULL_POINT(FLOAT_INF, FLOAT_INF, FLOAT_INF);
 
@@ -20,22 +21,31 @@ namespace RayTracing {
 		glm::vec3 specular;	// 镜面光
 		float shininess;	// 反光度
 
-		float kShade;
-		float kReflect;
-		float kRefract;
-		float refractiveIndex;
+		float kShade;			// 着色率
+		float kReflect;			// 反射率
+		float kRefract;			// 折射率
+		float refractiveIndex;	// 屈光率
 	};
 
 	/********************
-	* [结构] 平行光结构
+	* [类] 光源类
 	********************/
-	struct DirLight {
-		glm::vec3 direction;     // 方向向量
+	class Light {
+	public:
+		// - [虚函数] 计算光强函数 -
+		virtual glm::vec3 calLight(const Material& material, const glm::vec3& fragPos, const glm::vec3& norm, const glm::vec3& viewDir) const = 0;
+	};
 
-		glm::vec3 ambient;       // 环境光强度
-		glm::vec3 diffuse;       // 漫反射强度
-		glm::vec3 specular;      // 镜面光强度
-
+	class DirLight : public Light {
+	public:
+		// - [变量] 方向向量 -
+		glm::vec3 direction;     
+		// - [变量] 环境光强度 -
+		glm::vec3 ambient;
+		// - [变量] 漫反射强度 -
+		glm::vec3 diffuse;
+		// - [变量] 镜面光强度
+		glm::vec3 specular;      
 		// - [函数] 构造函数 -
 		DirLight(glm::vec3 direction, glm::vec3 ambient, glm::vec3 diffuse, glm::vec3 specular) :
 			direction(direction), ambient(ambient), diffuse(diffuse), specular(specular) { }
@@ -48,8 +58,8 @@ namespace RayTracing {
 			float diff = std::max(dot(norm, lightDir), 0.0f);
 			glm::vec3 diffuse = this->diffuse * diff * material.diffuse;
 			// 镜面光着色
-			glm::vec3 middle = glm::normalize(-viewDir + lightDir);
-			float spec = glm::pow(std::max(glm::dot(middle, norm), 0.0f), material.shininess);
+			glm::vec3 reflectDir = glm::reflect(-lightDir, norm);
+			float spec = glm::pow(std::max(glm::dot(viewDir, reflectDir), 0.0f), material.shininess);
 			glm::vec3 specular = this->specular * spec * material.specular;
 			// 合并结果
 			return (ambient + diffuse + specular);
@@ -208,27 +218,89 @@ namespace RayTracing {
 		}
 	};
 
-
 	/********************
 	 * [类] 场景类
 	 ********************/
-	/*
 	class Scene {
 	public:
-		Scene();
-		~Scene();
-		void addEntity(Entity* entity);
-		void addLight(Light* light);
-		glm::vec3 traceRay(const Ray& ray, unsigned int recursionTime = 0);
-		std::pair<const glm::vec3&, const Entity*> getIntersection(const Ray& ray);
-		glm::vec3 shade(const Entity& entity, glm::vec3 fragPos, const Ray& ray);
-
+		// - [常数] 最大递归次数 -
 		static const unsigned int MAX_RECURSION_TIME;
+		// - [函数] 析构函数 -
+		~Scene() {
+			for (Entity* p : entitys)
+				delete p;
+			for (Light* p : lights)
+				delete p;
+		}
+		// - [函数] 添加实体函数 -
+		void addEntity(Entity* entity) {
+			entitys.push_back(entity);
+		}
+		// - [函数] 添加光源函数 -
+		void addLight(Light* light) {
+			lights.push_back(light);
+		}
+		// - [函数] 计算光线与场景相交点 -
+		std::pair<const Entity*, const glm::vec3&> calIntersection(const Ray& ray) {
+			float minT = FLOAT_INF;
+			const Entity* collidedEntity = nullptr;
+			for (Entity* entity : entitys) {
+				float t = entity->calRayCollision(ray);
+				if (t > FLOAT_EPS && t < minT) {
+					minT = t;
+					collidedEntity = entity;
+				}
+			}
+			return std::pair<const Entity*, const glm::vec3&>(collidedEntity, ray.getPoint(minT));
+		}
+		// - [函数] 计算相交点光强 -
+		glm::vec3 calLight(const Entity& entity, glm::vec3 fragPos, const Ray& ray) {
+			glm::vec3 result(0.0f);
+			for (Light* light : lights)
+				result += light->calLight(entity.material, fragPos, entity.calNormal(fragPos), ray.direction);
+			return result;
+		}
+		// - [函数] 光线追踪主函数 -
+		glm::vec3 traceRay(const Ray& ray, unsigned int recursionTime = 0) {
+			glm::vec3 lightIntensity(0.0f);
+			if (recursionTime >= MAX_RECURSION_TIME)
+				return lightIntensity;
+
+			const auto& entityAndPoint = calIntersection(ray);
+			const Entity* collidedEntity = entityAndPoint.first;
+			if (!collidedEntity)
+				return lightIntensity;
+
+			glm::vec3 collidedPoint = entityAndPoint.second;
+			glm::vec3 normal = glm::normalize(collidedEntity->calNormal(collidedPoint));
+			bool isInEntity = collidedEntity->isRayInEntity(ray);
+			if (isInEntity)
+				normal = -normal;
+			
+			// - 局部光照强度 -
+			if (!isInEntity)
+				lightIntensity = collidedEntity->material.kShade * calLight(*collidedEntity, collidedPoint, ray);
+			
+			// - 反射光照强度 -
+			glm::vec3 reflectDirection = glm::reflect(ray.direction, normal);
+			if (collidedEntity->material.kReflect > FLOAT_EPS)
+				lightIntensity += collidedEntity->material.kReflect * traceRay(Ray(collidedPoint, collidedPoint + reflectDirection), recursionTime + 1);
+
+			// - 折射光照强度 -
+			float currentIndex = 1.0f;
+			float nextIndex = collidedEntity->material.refractiveIndex;
+			if (isInEntity)
+				std::swap(currentIndex, nextIndex);
+			glm::vec3 refractDirection = glm::refract(ray.direction, normal, currentIndex / nextIndex);
+			if (collidedEntity->material.kRefract > FLOAT_EPS)
+				lightIntensity += collidedEntity->material.kRefract * traceRay(Ray(collidedPoint, collidedPoint + refractDirection), recursionTime + 1);
+
+			return lightIntensity;
+		}
 	private:
-		std::vector<Entity*> _entitys;
-		std::vector<Light*> _lights;
+		std::vector<Entity*> entitys;
+		std::vector<Light*> lights;
 	};
-	*/
 }
 
 #endif

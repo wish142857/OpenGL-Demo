@@ -21,7 +21,7 @@
  ********************/
 const bool W_DYNAMIC_MODE = false;
 const bool W_LIGHT_MODE = true;
-const bool W_SKYBOX_MODE = false;
+const bool W_SKYBOX_MODE = true;
 const std::string OBJECT_SHADER_VS_PATH = "shader/object_shader.vs";
 const std::string OBJECT_SHADER_FS_PATH = "shader/object_shader.fs";
 const std::string SKYBOX_SHADER_VS_PATH = "shader/skybox_shader.vs";
