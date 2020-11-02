@@ -73,10 +73,10 @@ int World::run() {
         // 平行光
         dirLights.clear();
         dirLights.push_back(DirLight(
-            glm::vec3(0, 0.2f, 1.0f),           // direction
-            glm::vec3(0.05f, 0.05f, 0.05f),     // ambient
-            glm::vec3(0.4f, 0.4f, 0.4f),        // diffuse
-            glm::vec3(0.5f, 0.5f, 0.5f)         // specular
+            glm::vec3(0.2f, 0.5f, 1.0f),        // direction
+            glm::vec3(0.1f, 0.1f, 0.1f),        // ambient
+            glm::vec3(0.8f, 0.8f, 0.8f),        // diffuse
+            glm::vec3(1.0f, 1.0f, 1.0f)         // specular
         ));
         // 点光
         pointLights.clear();
@@ -143,45 +143,50 @@ int World::run() {
     // - 加载物体模型 -
     objects.clear();
     {
-        // - 加载鸟1 -
-        glm::mat4 model = glm::mat4(1.0f);
-        // model = glm::translate(model, glm::vec3(0.0f, 10.0f, 0.0f));
-        model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-        model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
-        Object *object = new Object("小鸟 1 号", "resources/objects/std/dragon_vrip.ply", model, 
-            glm::vec3(-0.4f, -0.2f, -0.6f), glm::vec3(0.4f, 0.2f, 0.6f));
-        objects.push_back(object);
-        // - 运动属性设置 -
-        object->moveVector = glm::vec3(0.0f, 0.0f, 0.0f);
-        object->accSpeedVetor.y = -0.2f;
-    }
-    /*
-    {
-        // - 加载鸟2 -
-        glm::mat4 model = glm::mat4(1.0f);
-        // model = glm::translate(model, glm::vec3(0.0f, -10.0f, 0.0f));
-        model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-        model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
-        Object* object = new Object("小鸟 2 号", "resources/objects/bird/2/2.obj", model,
-            glm::vec3(-0.6f, -0.2f, -0.9f), glm::vec3(0.5f, 0.2f, 0.9f));
-        objects.push_back(object);
-        // - 运动属性设置 -
-        object->moveVector = glm::vec3(0.0f, -2.0f, 0.0f);
-        object->accSpeedVetor.y = 0.2f;
-    }
-    {
-        // - 加载飞机 -
+        // - 加载模型 1.bun_zipper -
         glm::mat4 model = glm::mat4(1.0f);
         // model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
-        model = glm::rotate(model, glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-        model = glm::rotate(model, glm::radians(-90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-        model = glm::scale(model, glm::vec3(0.8f, 0.8f, 0.8f));
-        Object* object = new Object("F-35 战斗机", "resources/objects/flight/F-35_Lightning_II/F-35_Lightning_II.obj", model, 
-            glm::vec3(-6.4f, -0.8f, -4.4f), glm::vec3(8.0f, 0.6f, 4.4f));
+        // model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+        // model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
+        Object* object = new Object("<bun_zipper>", "resources/objects/std/bun_zipper.ply", model, 
+            glm::vec3(-0.4f, -0.2f, -0.6f), glm::vec3(0.4f, 0.2f, 0.6f));
+        object->useMap = false;
+        object->material.ambient = glm::vec3(0.19225f, 0.19225f, 0.19225f);
+        object->material.diffuse = glm::vec3(0.50754f, 0.50754f, 0.50754f);
+        object->material.specular = glm::vec3(0.508273f, 0.508273f, 0.508273f);
+        object->material.shininess = 51.2f;
         objects.push_back(object);
-        // - 运动属性设置 -
     }
-    */
+    {
+        // - 加载模型 2.dragon_vrip -
+        glm::mat4 model = glm::mat4(1.0f);
+        model = glm::translate(model, glm::vec3(-0.3f, 0.0f, 0.0f));
+        // model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+        // model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
+        Object* object = new Object("<dragon_vrip>", "resources/objects/std/dragon_vrip.ply", model,
+            glm::vec3(-0.4f, -0.2f, -0.6f), glm::vec3(0.4f, 0.2f, 0.6f));
+        object->useMap = false;
+        object->material.ambient = glm::vec3(0.24725f, 0.1995f, 0.0745f);
+        object->material.diffuse = glm::vec3(0.75164f, 0.60648f, 0.22648f);
+        object->material.specular = glm::vec3(0.628281f, 0.555802f, 0.366065f);
+        object->material.shininess = 51.2f;
+        objects.push_back(object);
+    }
+    {
+        // - 加载模型 3.happy_vrip -
+        glm::mat4 model = glm::mat4(1.0f);
+        model = glm::translate(model, glm::vec3(0.2f, 0.0f, 0.0f));
+        // model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+        // model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
+        Object* object = new Object("<happy_vrip>", "resources/objects/std/happy_vrip.ply", model,
+            glm::vec3(-0.4f, -0.2f, -0.6f), glm::vec3(0.4f, 0.2f, 0.6f));
+        object->useMap = false;
+        object->material.ambient = glm::vec3(0.19125f, 0.0735f, 0.0225f);
+        object->material.diffuse = glm::vec3(0.7038f, 0.27048f, 0.0828f);
+        object->material.specular = glm::vec3(0.256777f, 0.137622f, 0.086014f);
+        object->material.shininess = 12.8f;
+        objects.push_back(object);
+    }
     // ---------------
     // [glad] 加载光源
     // ---------------
@@ -277,11 +282,6 @@ int World::run() {
         objectShader->setMat4("view", view);
         objectShader->setMat4("projection", projection);
         objectShader->setVec3("viewPos", camera->position);
-        objectShader->setBool("material.useMap", false);
-        objectShader->setVec3("material.ambient", 1.0f, 0.5f, 0.31f);
-        objectShader->setVec3("material.diffuse", 1.0f, 0.5f, 0.31f);
-        objectShader->setVec3("material.specular", 0.5f, 0.5f, 0.5f);
-        objectShader->setFloat("material.shininess", 32.0f);
         for (Object* object : objects)
             object->draw(*objectShader);
         // - 渲染天空盒 -

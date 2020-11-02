@@ -93,18 +93,29 @@ class Object {
 public:
 	// - 动态变量 -
 	std::string name;			// 物体名称
-	glm::vec3 moveVector;		// 位移向量	
+	glm::vec3 moveVector;		// 位移向量
 	glm::vec3 speedVetor;		// 速度向量
 	glm::vec3 accSpeedVetor;	// 加速度向量
+	bool useMap;				// 是否使用贴图
+	Material material;			// 材质对象
 	// - 构造函数 -
 	Object(const std::string& name, const std::string &path, const glm::mat4 &modelMatrix, const glm::vec3 &minBoxPoint, const glm::vec3& maxBoxPoint)
 		: name(name), model(path), modelMatrix(modelMatrix), minBoxPoint(minBoxPoint), maxBoxPoint(maxBoxPoint) {
 		moveVector = speedVetor = accSpeedVetor = glm::vec3(0.0f);
+		useMap = false;
+		material.ambient = material.diffuse = material.specular = glm::vec3(0.0f);
 		return;
 	}
 	// - 渲染函数 -
 	void draw(Shader& shader) {
-		shader.setMat4("model", glm::translate(modelMatrix, moveVector));
+		shader.setBool("material.useMap", useMap);
+		if (!useMap) {
+			shader.setVec3("material.ambient", material.ambient);
+			shader.setVec3("material.diffuse", material.diffuse);
+			shader.setVec3("material.specular", material.specular);
+			shader.setFloat("material.shininess", material.shininess);
+		}
+		shader.setMat4("model", modelMatrix);
 		model.drawModel(shader);
 		return;
 	}
