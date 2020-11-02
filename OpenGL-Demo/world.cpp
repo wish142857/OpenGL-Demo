@@ -81,7 +81,7 @@ int World::run() {
         // 点光
         pointLights.clear();
         pointLights.push_back(PointLight(
-            glm::vec3(0.0f, 0.5f, 0.0f),        // position
+            glm::vec3(0.0f, 0.5f, 0.5f),        // position
             1.0f,                               // constant
             0.09f,                              // linear
             0.032f,                             // quadratic
@@ -91,6 +91,18 @@ int World::run() {
         ));
         // 聚光
         spotLights.clear();
+        spotLights.push_back(SpotLight(
+            glm::vec3(0.0f, 0.0f, 0.0f),        // position
+            glm::vec3(0.0f, 0.0f, 0.0f),        // direction
+            glm::cos(glm::radians(7.5f)),       // cutOff
+            glm::cos(glm::radians(10.0f)),      // outerCutOff
+            1.0f,                               // constant
+            0.09f,                              // linear
+            0.032f,                             // quadratic
+            glm::vec3(0.0f, 0.0f, 0.0f),        // ambient
+            glm::vec3(1.0f, 1.0f, 1.0f),        // diffuse
+            glm::vec3(1.0f, 1.0f, 1.0f)         // specular
+        ));
     }
     // ---------------
     // [glad] 加载模型
@@ -201,6 +213,7 @@ int World::run() {
     }
     // - 加载点光源 -
     // 仅加载最多三项
+    objectShader->setInt("pointLightNumber", pointLights.size() <= 3 ? pointLights.size() : 3);
     if (pointLights.size() > 0) {
         objectShader->setVec3("pointLights[0].position", pointLights[0].position);
         objectShader->setVec3("pointLights[0].ambient", pointLights[0].ambient);
@@ -231,8 +244,18 @@ int World::run() {
     // - 加载聚光源 -
     // 仅加载首项
     if (!spotLights.empty()) {
-        // TODO
+        objectShader->setVec3("spotLight.position", camera->position);
+        objectShader->setVec3("spotLight.direction", camera->front);
+        objectShader->setVec3("spotLight.ambient", spotLights[0].ambient);
+        objectShader->setVec3("spotLight.diffuse", spotLights[0].diffuse);
+        objectShader->setVec3("spotLight.specular", spotLights[0].specular);
+        objectShader->setFloat("spotLight.constant", spotLights[0].constant);
+        objectShader->setFloat("spotLight.linear", spotLights[0].linear);
+        objectShader->setFloat("spotLight.quadratic", spotLights[0].quadratic);
+        objectShader->setFloat("spotLight.cutOff", spotLights[0].cutOff);
+        objectShader->setFloat("spotLight.outerCutOff", spotLights[0].outerCutOff);
     }
+
     // --------------------
     // [glfw/glad] 渲染循环
     // --------------------
@@ -257,7 +280,7 @@ int World::run() {
         // - 处理输入 -
         processInput(window);
         // - 清空缓冲 -
-        glClearColor(0.5f, 0.5f, 0.5f, 1.0f);            // 设置清空填充颜色
+        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);            // 设置清空填充颜色
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // 清空颜色缓冲、深度缓冲
         // - 设置观察/投影矩阵 -
         glm::mat4 view = camera->getViewMatrix();
@@ -282,6 +305,10 @@ int World::run() {
         objectShader->setMat4("view", view);
         objectShader->setMat4("projection", projection);
         objectShader->setVec3("viewPos", camera->position);
+        if (W_LIGHT_MODE && !spotLights.empty()) {
+            objectShader->setVec3("spotLight.position", camera->position);
+            objectShader->setVec3("spotLight.direction", camera->front);
+        }
         for (Object* object : objects)
             object->draw(*objectShader);
         // - 渲染天空盒 -

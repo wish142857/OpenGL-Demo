@@ -65,6 +65,7 @@ uniform Material material;                          // 材质
 uniform DirLight dirLight;                          // 平行光
 uniform PointLight pointLights[NR_POINT_LIGHTS];    // 点光源
 uniform SpotLight spotLight;                        // 聚光源
+uniform int pointLightNumber;                       // 点光源数量
 
 uniform sampler2D texture_diffuse1;
 
@@ -82,10 +83,10 @@ void main()
     // 计算平行光光强
     vec3 result = CalcDirLight(dirLight, norm, viewDir);
     // 计算点光源光强
-    // for(int i = 0; i < NR_POINT_LIGHTS; i++)
-    //    result += CalcPointLight(pointLights[i], norm, FragPos, viewDir);    
+    for(int i = 0; i < pointLightNumber; i++)
+        result += CalcPointLight(pointLights[i], norm, FragPos, viewDir);    
     // 计算聚光源光强
-    // result += CalcSpotLight(spotLight, norm, FragPos, viewDir);    
+    result += CalcSpotLight(spotLight, norm, FragPos, viewDir);    
     FragColor = vec4(result, 1.0);
     // FragColor = texture(texture_diffuse1, TexCoords);
 }
