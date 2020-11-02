@@ -33,16 +33,22 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
-    <None Include="shader\shader.fs">
+    <None Include="shader\object_shader.fs">
       <Filter>源文件\shader</Filter>
     </None>
-    <None Include="shader\shader.vs">
+    <None Include="shader\object_shader.vs">
       <Filter>源文件\shader</Filter>
     </None>
-    <None Include="shader\skybox.fs">
+    <None Include="shader\skybox_shader.fs">
       <Filter>源文件\shader</Filter>
     </None>
-    <None Include="shader\skybox.vs">
+    <None Include="shader\skybox_shader.vs">
+      <Filter>源文件\shader</Filter>
+    </None>
+    <None Include="shader\light_shader.fs">
+      <Filter>源文件\shader</Filter>
+    </None>
+    <None Include="shader\light_shader.vs">
       <Filter>源文件\shader</Filter>
     </None>
   </ItemGroup>

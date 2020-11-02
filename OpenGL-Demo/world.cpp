@@ -50,24 +50,97 @@ int World::run() {
     // ---------------------------
     // [glad] 创建并编译着色器程序
     // ---------------------------
-    objectShader = new Shader(SHADER_VS_PATH.c_str(), SHADER_FS_PATH.c_str());
+    objectShader = new Shader(OBJECT_SHADER_VS_PATH.c_str(), OBJECT_SHADER_FS_PATH.c_str());
     skyboxShader = new Shader(SKYBOX_SHADER_VS_PATH.c_str(), SKYBOX_SHADER_FS_PATH.c_str());
+    lightShader = new Shader(LIGHT_SHADER_VS_PATH.c_str(), LIGHT_SHADER_FS_PATH.c_str());
     // ----------
     // 程序初始化
     // ----------
+    // - 初始化 stb_image -
+    stbi_set_flip_vertically_on_load(false);
     // - 创建并初始化相机 -
-    camera = new Camera(glm::vec3(0.0f, 0.0f, 12.0f));
+    camera = new Camera(glm::vec3(0.0f, 0.2f, 1.0f));
     lastX = sreenWidth / 2.0f;
     lastY = sreenHeight / 2.0f;
     firstMouse = true;
     // - 初始化计时器 -
     deltaTime = 0.0f;
     lastFrame = 0.0f;
-    // - 初始化 stb_image -
-    stbi_set_flip_vertically_on_load(false);
+    // - 初始化材质 -
+    materials.clear();
+    // - 初始化光源 -
+    if (W_LIGHT_MODE) {
+        // 平行光
+        dirLights.clear();
+        dirLights.push_back(DirLight(
+            glm::vec3(0, 0.2f, 1.0f),           // direction
+            glm::vec3(0.05f, 0.05f, 0.05f),     // ambient
+            glm::vec3(0.4f, 0.4f, 0.4f),        // diffuse
+            glm::vec3(0.5f, 0.5f, 0.5f)         // specular
+        ));
+        // 点光
+        pointLights.clear();
+        pointLights.push_back(PointLight(
+            glm::vec3(0.0f, 0.5f, 0.0f),        // position
+            1.0f,                               // constant
+            0.09f,                              // linear
+            0.032f,                             // quadratic
+            glm::vec3(0.05f, 0.05f, 0.05f),     // ambient
+            glm::vec3(0.8f, 0.8f, 0.8f),        // diffuse
+            glm::vec3(1.0f, 1.0f, 1.0f)         // specular
+        ));
+        // 聚光
+        spotLights.clear();
+    }
     // ---------------
     // [glad] 加载模型
     // ---------------
+    // - 加载天空盒 -
+    if (W_SKYBOX_MODE) {
+        float skyboxVertices[] = {
+            -1.0f,  1.0f, -1.0f,    -1.0f, -1.0f, -1.0f,    1.0f, -1.0f, -1.0f,    1.0f, -1.0f, -1.0f,    1.0f,  1.0f, -1.0f,    -1.0f,  1.0f, -1.0f,
+            -1.0f, -1.0f,  1.0f,    -1.0f, -1.0f, -1.0f,    -1.0f,  1.0f, -1.0f,    -1.0f,  1.0f, -1.0f,    -1.0f,  1.0f,  1.0f,    -1.0f, -1.0f,  1.0f,
+            1.0f, -1.0f, -1.0f,    1.0f, -1.0f,  1.0f,    1.0f,  1.0f,  1.0f,    1.0f,  1.0f,  1.0f,    1.0f,  1.0f, -1.0f,    1.0f, -1.0f, -1.0f,
+            -1.0f, -1.0f,  1.0f,    -1.0f,  1.0f,  1.0f,    1.0f,  1.0f,  1.0f,    1.0f,  1.0f,  1.0f,    1.0f, -1.0f,  1.0f,    -1.0f, -1.0f,  1.0f,
+            -1.0f,  1.0f, -1.0f,    1.0f,  1.0f, -1.0f,    1.0f,  1.0f,  1.0f,    1.0f,  1.0f,  1.0f,    -1.0f,  1.0f,  1.0f,    -1.0f,  1.0f, -1.0f,
+            -1.0f, -1.0f, -1.0f,    -1.0f, -1.0f,  1.0f,    1.0f, -1.0f, -1.0f,    1.0f, -1.0f, -1.0f,    -1.0f, -1.0f,  1.0f,    1.0f, -1.0f,  1.0f
+        };
+        glGenVertexArrays(1, &skyboxVAO);
+        glGenBuffers(1, &skyboxVBO);
+        glBindVertexArray(skyboxVAO);
+        glBindBuffer(GL_ARRAY_BUFFER, skyboxVBO);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVertices), &skyboxVertices, GL_STATIC_DRAW);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+        glEnableVertexAttribArray(0);
+        std::vector<std::string> faces{
+            "resources/textures/skybox/right.jpg",
+            "resources/textures/skybox/left.jpg",
+            "resources/textures/skybox/top.jpg",
+            "resources/textures/skybox/bottom.jpg",
+            "resources/textures/skybox/front.jpg",
+            "resources/textures/skybox/back.jpg",
+        };
+        cubemapTexture = loadCubemap(faces);
+    }
+    // - 加载光源立方体 -
+    if (W_LIGHT_MODE) {
+        float lightCubeVertices[] = {
+            -0.5f, -0.5f, -0.5f,    0.5f, -0.5f, -0.5f,    0.5f,  0.5f, -0.5f,    0.5f,  0.5f, -0.5f,    -0.5f,  0.5f, -0.5f,    -0.5f, -0.5f, -0.5f,
+            -0.5f, -0.5f,  0.5f,    0.5f, -0.5f,  0.5f,    0.5f,  0.5f,  0.5f,    0.5f,  0.5f,  0.5f,    -0.5f,  0.5f,  0.5f,    -0.5f, -0.5f,  0.5f,
+            -0.5f,  0.5f,  0.5f,    -0.5f,  0.5f, -0.5f,    -0.5f, -0.5f, -0.5f,    -0.5f, -0.5f, -0.5f,    -0.5f, -0.5f,  0.5f,    -0.5f,  0.5f,  0.5f,
+            0.5f,  0.5f,  0.5f,    0.5f,  0.5f, -0.5f,    0.5f, -0.5f, -0.5f,    0.5f, -0.5f, -0.5f,    0.5f, -0.5f,  0.5f,    0.5f,  0.5f,  0.5f,
+            -0.5f, -0.5f, -0.5f,    0.5f, -0.5f, -0.5f,    0.5f, -0.5f,  0.5f,    0.5f, -0.5f,  0.5f,    -0.5f, -0.5f,  0.5f,    -0.5f, -0.5f, -0.5f,
+            -0.5f,  0.5f, -0.5f,    0.5f,  0.5f, -0.5f,    0.5f,  0.5f,  0.5f,    0.5f,  0.5f,  0.5f,    -0.5f,  0.5f,  0.5f,    -0.5f,  0.5f, -0.5f,
+        };
+        glGenVertexArrays(1, &lightCubeVAO);
+        glGenBuffers(1, &lightCubeVBO);
+        glBindVertexArray(lightCubeVAO);
+        glBindBuffer(GL_ARRAY_BUFFER, lightCubeVBO);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(lightCubeVertices), &lightCubeVertices, GL_STATIC_DRAW);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+        glEnableVertexAttribArray(0);
+    }
+    // - 加载物体模型 -
     objects.clear();
     {
         // - 加载鸟1 -
@@ -79,7 +152,7 @@ int World::run() {
             glm::vec3(-0.4f, -0.2f, -0.6f), glm::vec3(0.4f, 0.2f, 0.6f));
         objects.push_back(object);
         // - 运动属性设置 -
-        object->moveVector = glm::vec3(0.0f, 1.8f, 0.0f);
+        object->moveVector = glm::vec3(0.0f, 0.0f, 0.0f);
         object->accSpeedVetor.y = -0.2f;
     }
     /*
@@ -109,67 +182,52 @@ int World::run() {
         // - 运动属性设置 -
     }
     */
-    float skyboxVertices[] = {        
-        -1.0f,  1.0f, -1.0f,
-        -1.0f, -1.0f, -1.0f,
-         1.0f, -1.0f, -1.0f,
-         1.0f, -1.0f, -1.0f,
-         1.0f,  1.0f, -1.0f,
-        -1.0f,  1.0f, -1.0f,
-
-        -1.0f, -1.0f,  1.0f,
-        -1.0f, -1.0f, -1.0f,
-        -1.0f,  1.0f, -1.0f,
-        -1.0f,  1.0f, -1.0f,
-        -1.0f,  1.0f,  1.0f,
-        -1.0f, -1.0f,  1.0f,
-
-         1.0f, -1.0f, -1.0f,
-         1.0f, -1.0f,  1.0f,
-         1.0f,  1.0f,  1.0f,
-         1.0f,  1.0f,  1.0f,
-         1.0f,  1.0f, -1.0f,
-         1.0f, -1.0f, -1.0f,
-
-        -1.0f, -1.0f,  1.0f,
-        -1.0f,  1.0f,  1.0f,
-         1.0f,  1.0f,  1.0f,
-         1.0f,  1.0f,  1.0f,
-         1.0f, -1.0f,  1.0f,
-        -1.0f, -1.0f,  1.0f,
-
-        -1.0f,  1.0f, -1.0f,
-         1.0f,  1.0f, -1.0f,
-         1.0f,  1.0f,  1.0f,
-         1.0f,  1.0f,  1.0f,
-        -1.0f,  1.0f,  1.0f,
-        -1.0f,  1.0f, -1.0f,
-
-        -1.0f, -1.0f, -1.0f,
-        -1.0f, -1.0f,  1.0f,
-         1.0f, -1.0f, -1.0f,
-         1.0f, -1.0f, -1.0f,
-        -1.0f, -1.0f,  1.0f,
-         1.0f, -1.0f,  1.0f
-    };
-    // 天空盒 VAO
-    unsigned int skyboxVAO, skyboxVBO;
-    glGenVertexArrays(1, &skyboxVAO);
-    glGenBuffers(1, &skyboxVBO);
-    glBindVertexArray(skyboxVAO);
-    glBindBuffer(GL_ARRAY_BUFFER, skyboxVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVertices), &skyboxVertices, GL_STATIC_DRAW);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-    std::vector<std::string> faces {
-        "resources/textures/skybox/right.jpg",
-        "resources/textures/skybox/left.jpg",
-        "resources/textures/skybox/top.jpg",
-        "resources/textures/skybox/bottom.jpg",
-        "resources/textures/skybox/front.jpg",
-        "resources/textures/skybox/back.jpg",
-    };
-    unsigned int cubemapTexture = loadCubemap(faces);
+    // ---------------
+    // [glad] 加载光源
+    // ---------------
+    objectShader->use();
+    // - 加载平行光源 -
+    // 仅加载列表首项
+    if (!dirLights.empty()) {
+        objectShader->setVec3("dirLight.direction", dirLights[0].direction);
+        objectShader->setVec3("dirLight.ambient", dirLights[0].ambient);
+        objectShader->setVec3("dirLight.diffuse", dirLights[0].diffuse);
+        objectShader->setVec3("dirLight.specular", dirLights[0].specular);
+    }
+    // - 加载点光源 -
+    // 仅加载最多三项
+    if (pointLights.size() > 0) {
+        objectShader->setVec3("pointLights[0].position", pointLights[0].position);
+        objectShader->setVec3("pointLights[0].ambient", pointLights[0].ambient);
+        objectShader->setVec3("pointLights[0].diffuse", pointLights[0].diffuse);
+        objectShader->setVec3("pointLights[0].specular", pointLights[0].specular);
+        objectShader->setFloat("pointLights[0].constant", pointLights[0].constant);
+        objectShader->setFloat("pointLights[0].linear", pointLights[0].linear);
+        objectShader->setFloat("pointLights[0].quadratic", pointLights[0].quadratic);
+    }
+    if (pointLights.size() > 1) {
+        objectShader->setVec3("pointLights[1].position", pointLights[1].position);
+        objectShader->setVec3("pointLights[1].ambient", pointLights[1].ambient);
+        objectShader->setVec3("pointLights[1].diffuse", pointLights[1].diffuse);
+        objectShader->setVec3("pointLights[1].specular", pointLights[1].specular);
+        objectShader->setFloat("pointLights[1].constant", pointLights[1].constant);
+        objectShader->setFloat("pointLights[1].linear", pointLights[1].linear);
+        objectShader->setFloat("pointLights[1].quadratic", pointLights[1].quadratic);
+    }
+    if (pointLights.size() > 2) {
+        objectShader->setVec3("pointLights[2].position", pointLights[2].position);
+        objectShader->setVec3("pointLights[2].ambient", pointLights[2].ambient);
+        objectShader->setVec3("pointLights[2].diffuse", pointLights[2].diffuse);
+        objectShader->setVec3("pointLights[2].specular", pointLights[2].specular);
+        objectShader->setFloat("pointLights[2].constant", pointLights[2].constant);
+        objectShader->setFloat("pointLights[2].linear", pointLights[2].linear);
+        objectShader->setFloat("pointLights[2].quadratic", pointLights[2].quadratic);
+    }
+    // - 加载聚光源 -
+    // 仅加载首项
+    if (!spotLights.empty()) {
+        // TODO
+    }
     // --------------------
     // [glfw/glad] 渲染循环
     // --------------------
@@ -179,7 +237,7 @@ int World::run() {
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
         // --- 处理运动 ---
-        if (W_DYNAMIC_AVAILABLE) {
+        if (W_DYNAMIC_MODE) {
             for (Object* object : objects) {
                 object->move(deltaTime);
                 for (Object* target : objects)
@@ -196,21 +254,40 @@ int World::run() {
         // - 清空缓冲 -
         glClearColor(0.5f, 0.5f, 0.5f, 1.0f);            // 设置清空填充颜色
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // 清空颜色缓冲、深度缓冲
-        // - 激活着色器 -
-        objectShader->use();
-        // --- 开始渲染 ---
         // - 设置观察/投影矩阵 -
         glm::mat4 view = camera->getViewMatrix();
         glm::mat4 projection = glm::perspective(glm::radians(camera->zoom), (float)sreenWidth / (float)sreenHeight, 0.1f, 100.0f);
+        // --- 开始渲染 ---
+        // - 渲染光源 -
+        if (W_LIGHT_MODE) {
+            lightShader->use();
+            lightShader->setMat4("view", view);
+            lightShader->setMat4("projection", projection);
+            glBindVertexArray(lightCubeVAO);
+            for (const PointLight& pointLight : pointLights) {
+                glm::mat4 model = glm::mat4(1.0f);
+                model = glm::translate(model, pointLight.position);
+                model = glm::scale(model, glm::vec3(0.01f));
+                lightShader->setMat4("model", model);
+                glDrawArrays(GL_TRIANGLES, 0, 36);
+            }
+        }
+        // - 渲染模型 -
+        objectShader->use();
         objectShader->setMat4("view", view);
         objectShader->setMat4("projection", projection);
-        // - 渲染模型 -
+        objectShader->setVec3("viewPos", camera->position);
+        objectShader->setBool("material.useMap", false);
+        objectShader->setVec3("material.ambient", 1.0f, 0.5f, 0.31f);
+        objectShader->setVec3("material.diffuse", 1.0f, 0.5f, 0.31f);
+        objectShader->setVec3("material.specular", 0.5f, 0.5f, 0.5f);
+        objectShader->setFloat("material.shininess", 32.0f);
         for (Object* object : objects)
             object->draw(*objectShader);
         // - 渲染天空盒 -
-        if (W_SKYBOX_AVAILABLE) {
-            skyboxShader->use();
+        if (W_SKYBOX_MODE) {
             view = glm::mat4(glm::mat3(camera->getViewMatrix()));
+            skyboxShader->use();
             skyboxShader->setMat4("view", view);
             skyboxShader->setMat4("projection", projection);
             glDepthFunc(GL_LEQUAL);
@@ -228,11 +305,6 @@ int World::run() {
         glfwPollEvents();
     }
     // ---------------
-    // [glad] 释放资源
-    // ---------------
-    glDeleteVertexArrays(1, &VAO);
-    glDeleteBuffers(1, &VBO); 
-    // ---------------
     // [glfw] 销毁窗口
     // ---------------
     glfwTerminate();
@@ -243,8 +315,9 @@ int World::run() {
     delete camera;
     delete objectShader;
     delete skyboxShader;
+    delete lightShader;
     camera = nullptr;
-    objectShader = skyboxShader = nullptr;
+    objectShader = skyboxShader = lightShader = nullptr;
     return 0;
 }
 

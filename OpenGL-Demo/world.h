@@ -19,12 +19,71 @@
 /********************
  * [常量] 常量定义
  ********************/
-const bool W_DYNAMIC_AVAILABLE = false;
-const bool W_SKYBOX_AVAILABLE = true;
-const std::string SHADER_VS_PATH = "shader/shader.vs";
-const std::string SHADER_FS_PATH = "shader/shader.fs";
-const std::string SKYBOX_SHADER_VS_PATH = "shader/skybox.vs";
-const std::string SKYBOX_SHADER_FS_PATH = "shader/skybox.fs";
+const bool W_DYNAMIC_MODE = false;
+const bool W_LIGHT_MODE = true;
+const bool W_SKYBOX_MODE = true;
+const std::string OBJECT_SHADER_VS_PATH = "shader/object_shader.vs";
+const std::string OBJECT_SHADER_FS_PATH = "shader/object_shader.fs";
+const std::string SKYBOX_SHADER_VS_PATH = "shader/skybox_shader.vs";
+const std::string SKYBOX_SHADER_FS_PATH = "shader/skybox_shader.fs";
+const std::string LIGHT_SHADER_VS_PATH = "shader/light_shader.vs";
+const std::string LIGHT_SHADER_FS_PATH = "shader/light_shader.fs";
+
+
+/********************
+ * [结构] 材质结构
+ ********************/
+struct Material {
+	glm::vec3 ambient;	// 环境光
+	glm::vec3 diffuse;	// 漫反射
+	glm::vec3 specular;	// 镜面光
+	float shininess;	// 反光度
+};
+
+
+/********************
+ * [结构] 光源结构
+ ********************/
+// - 平行光结构 -
+struct DirLight{
+	glm::vec3 direction;     // 方向向量
+
+	glm::vec3 ambient;       // 环境光强度
+	glm::vec3 diffuse;       // 漫反射强度
+	glm::vec3 specular;      // 镜面光强度
+
+	DirLight(glm::vec3 direction, glm::vec3 ambient, glm::vec3 diffuse, glm::vec3 specular) :
+		direction(direction), ambient(ambient), diffuse(diffuse), specular(specular) { }
+};
+// - 点光源结构 -
+struct PointLight {
+	glm::vec3 position;      // 世界坐标
+
+	float constant;			 // 衰减系数常数项
+	float linear;			 // 衰减系数一次项
+	float quadratic;		 // 衰减系数二次项
+
+	glm::vec3 ambient;       // 环境光强度
+	glm::vec3 diffuse;       // 漫反射强度
+	glm::vec3 specular;      // 镜面光强度
+	PointLight(glm::vec3 position, float constant, float linear, float quadratic, glm::vec3 ambient, glm::vec3 diffuse, glm::vec3 specular) :
+		position(position), constant(constant), linear(linear), quadratic(quadratic), ambient(ambient), diffuse(diffuse), specular(specular) { }
+};
+// - 聚光源结构 -
+struct SpotLight {
+	glm::vec3 position;      // 世界坐标
+	glm::vec3 direction;     // 方向向量
+	float cutOff;			 // 切光角
+	float outerCutOff;		 // 外切光角
+
+	float constant;			 // 衰减系数常数项
+	float linear;			 // 衰减系数一次项
+	float quadratic;		 // 衰减系数二次项
+
+	glm::vec3 ambient;       // 环境光强度
+	glm::vec3 diffuse;       // 漫反射强度
+	glm::vec3 specular;      // 镜面光强度
+};
 
 
 /********************
@@ -102,6 +161,11 @@ private:
  ********************/
 class World {
 public:
+	// - 接口函数 -
+	static World* getInstance() { return &World::world; }
+	int run();
+
+private:
 	// - 摄像机 -
 	Camera* camera;		// 摄像机对象指针
 	float lastX;
@@ -110,21 +174,29 @@ public:
 	// - 着色器 -
 	Shader* objectShader;	// 物体着色器对象指针
 	Shader* skyboxShader;	// 天空盒着色器对象指针
+	Shader* lightShader;	// 光源着色器对象指针
 	// - 计时器 -
 	float deltaTime;
 	float lastFrame;
-	// - 顶点数据 -
-	GLuint VAO, VBO;
+	// - 天空盒 -
+	GLuint skyboxVAO;
+	GLuint skyboxVBO;
+	GLuint cubemapTexture;
+	// - 材质 -
+	std::vector<Material> materials;		// 材质列表
+	// - 光源 -
+	GLuint lightCubeVAO;
+	GLuint lightCubeVBO;
+	std::vector<DirLight> dirLights;		// 平行光列表
+	std::vector<PointLight> pointLights;	// 点光列表
+	std::vector<SpotLight> spotLights;		// 聚光列表
 	// - 物体数据 -
-	std::vector<Object *> objects;
-	// - 接口函数 -
-	static World* getInstance() { return &World::world; }
-	int run();
-private:
+	std::vector<Object*> objects;
 	// - 构造函数 -
 	World() : camera(nullptr), lastX(0), lastY(0), firstMouse(false), 
-		objectShader(nullptr), skyboxShader(nullptr) , deltaTime(0), lastFrame(0), 
-		VAO(0), VBO(0), sreenWidth(1280), sreenHeight(960) { }
+		objectShader(nullptr), skyboxShader(nullptr) , lightShader(nullptr), deltaTime(0), lastFrame(0),
+		skyboxVAO(0), skyboxVBO(0), cubemapTexture(0), lightCubeVAO(0), lightCubeVBO(0),
+		sreenWidth(1280), sreenHeight(960) { }
 	// - 私有函数 -
 	static World world;
 	unsigned int sreenWidth;
@@ -134,6 +206,9 @@ private:
 	GLuint loadTexture(const char* path);				// 纹理加载函数
 	GLuint loadCubemap(std::vector<std::string> faces);	// 立方体贴图加载函数
 
+	friend void framebufferSizeCallback(GLFWwindow* window, int width, int height); // 窗口尺寸回调函数
+	friend void mouseCallback(GLFWwindow* window, double xpos, double ypos);		// 鼠标移动回调函数
+	friend void scrollCallback(GLFWwindow* window, double xoffset, double yoffset);	// 鼠标滚轮回调函数
 };
 
 extern void framebufferSizeCallback(GLFWwindow* window, int width, int height);	// 窗口尺寸回调函数
