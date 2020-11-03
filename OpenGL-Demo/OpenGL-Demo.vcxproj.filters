@@ -30,6 +30,9 @@
     <ClCompile Include="world.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="test.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -49,6 +52,12 @@
       <Filter>源文件\shader</Filter>
     </None>
     <None Include="shader\light_shader.vs">
+      <Filter>源文件\shader</Filter>
+    </None>
+    <None Include="shader\ray_shader.fs">
+      <Filter>源文件\shader</Filter>
+    </None>
+    <None Include="shader\ray_shader.vs">
       <Filter>源文件\shader</Filter>
     </None>
   </ItemGroup>

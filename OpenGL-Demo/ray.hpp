@@ -1,7 +1,9 @@
 #pragma once
 #ifndef RAY_H
 #define RAY_H
+
 #include <algorithm>
+#include <functional>
 #include <vector>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -10,16 +12,15 @@
 namespace RayTracing {
 	static const float FLOAT_INF = 1e8;
 	static const float FLOAT_EPS = 1e-5;
-	static const glm::vec3 NULL_POINT(FLOAT_INF, FLOAT_INF, FLOAT_INF);
 
 	/********************
 	 * [结构] 材质结构
 	 ********************/
 	struct Material {
-		glm::vec3 ambient;	// 环境光
-		glm::vec3 diffuse;	// 漫反射
-		glm::vec3 specular;	// 镜面光
-		float shininess;	// 反光度
+		std::function<glm::vec3(const glm::vec3& pos)> ambient;		// 环境光
+		std::function<glm::vec3(const glm::vec3& pos)> diffuse;		// 漫反射
+		std::function<glm::vec3(const glm::vec3& pos)> specular;	// 镜面光
+		std::function<float(const glm::vec3& pos)> shininess;		// 反光度
 
 		float kShade;			// 着色率
 		float kReflect;			// 反射率
@@ -47,20 +48,20 @@ namespace RayTracing {
 		// - [变量] 镜面光强度
 		glm::vec3 specular;      
 		// - [函数] 构造函数 -
-		DirLight(glm::vec3 direction, glm::vec3 ambient, glm::vec3 diffuse, glm::vec3 specular) :
+		DirLight(glm::vec3 specular, glm::vec3 ambient, glm::vec3 diffuse, glm::vec3 direction) :
 			direction(direction), ambient(ambient), diffuse(diffuse), specular(specular) { }
 		// - [函数] 计算光强函数 -
 		glm::vec3 calLight(const Material& material, const glm::vec3& fragPos, const glm::vec3& norm, const glm::vec3& viewDir) const {
 			// 环境光着色
-			glm::vec3 ambient = this->ambient * material.ambient;
+			glm::vec3 ambient = this->ambient * material.ambient(fragPos);
 			// 漫反射着色
 			glm::vec3 lightDir = glm::normalize(-direction);
 			float diff = std::max(dot(norm, lightDir), 0.0f);
-			glm::vec3 diffuse = this->diffuse * diff * material.diffuse;
+			glm::vec3 diffuse = this->diffuse * diff * material.diffuse(fragPos);
 			// 镜面光着色
 			glm::vec3 reflectDir = glm::reflect(-lightDir, norm);
-			float spec = glm::pow(std::max(glm::dot(viewDir, reflectDir), 0.0f), material.shininess);
-			glm::vec3 specular = this->specular * spec * material.specular;
+			float spec = glm::pow(std::max(glm::dot(viewDir, reflectDir), 0.0f), material.shininess(fragPos));
+			glm::vec3 specular = this->specular * spec * material.specular(fragPos);
 			// 合并结果
 			return (ambient + diffuse + specular);
 		}
@@ -76,7 +77,7 @@ namespace RayTracing {
 		// - [变量] 射线方向 -
 		glm::vec3 direction;
 		// - [函数] 构造函数 -
-		Ray(glm::vec3 origin, glm::vec3 direction) : origin(origin), direction(direction) { }
+		Ray(glm::vec3 src, glm::vec3 dest) : origin(src), direction(glm::normalize(dest - src)) { }
 		// - [函数] 获取射线上参数为 t 的点 -
 		inline glm::vec3 getPoint(float t) const {
 			return origin + t * direction;
@@ -224,7 +225,7 @@ namespace RayTracing {
 	class Scene {
 	public:
 		// - [常数] 最大递归次数 -
-		static const unsigned int MAX_RECURSION_TIME;
+		static const unsigned int MAX_RECURSION_TIME = 3;
 		// - [函数] 析构函数 -
 		~Scene() {
 			for (Entity* p : entitys)

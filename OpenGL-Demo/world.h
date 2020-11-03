@@ -12,8 +12,10 @@
 
 #include <iostream>
 #include "camera.hpp"
-#include "shader.hpp"
 #include "model.hpp"
+#include "ray.hpp"
+#include "shader.hpp"
+
 
 
 /********************
@@ -22,13 +24,16 @@
 const bool W_DYNAMIC_MODE = false;
 const bool W_LIGHT_MODE = true;
 const bool W_SKYBOX_MODE = true;
+const std::string STD_MODE_KEY = "STD";
+const std::string RAY_MODE_KEY = "RAY";
 const std::string OBJECT_SHADER_VS_PATH = "shader/object_shader.vs";
 const std::string OBJECT_SHADER_FS_PATH = "shader/object_shader.fs";
 const std::string SKYBOX_SHADER_VS_PATH = "shader/skybox_shader.vs";
 const std::string SKYBOX_SHADER_FS_PATH = "shader/skybox_shader.fs";
 const std::string LIGHT_SHADER_VS_PATH = "shader/light_shader.vs";
 const std::string LIGHT_SHADER_FS_PATH = "shader/light_shader.fs";
-
+const std::string RAY_SHADER_VS_PATH = "shader/ray_shader.vs";
+const std::string RAY_SHADER_FS_PATH = "shader/ray_shader.fs";
 
 /********************
  * [结构] 材质结构
@@ -176,8 +181,9 @@ class World {
 public:
 	// - 接口函数 -
 	static World* getInstance() { return &World::world; }
-	int run();
-
+	int run(const std::string &mode);	// 运行函数
+	int runStdMode();	// 运行标准模式函数
+	int runRayMode();	// 运行光线追踪模式函数
 private:
 	// - 摄像机 -
 	Camera* camera;		// 摄像机对象指针
@@ -210,10 +216,10 @@ private:
 		objectShader(nullptr), skyboxShader(nullptr) , lightShader(nullptr), deltaTime(0), lastFrame(0),
 		skyboxVAO(0), skyboxVBO(0), cubemapTexture(0), lightCubeVAO(0), lightCubeVBO(0),
 		sreenWidth(1280), sreenHeight(960) { }
-	// - 私有函数 -
+	// - 私有变量 -
 	static World world;
-	unsigned int sreenWidth;
-	unsigned int sreenHeight;
+	unsigned int sreenWidth;	// 屏幕宽度
+	unsigned int sreenHeight;	// 屏幕高度
 	// - 私有函数 -
 	void processInput(GLFWwindow* window);				// 输入处理函数
 	GLuint loadTexture(const char* path);				// 纹理加载函数

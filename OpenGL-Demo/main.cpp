@@ -7,6 +7,5 @@ World World::world;		// 构造单体实例对象
  * [函数] 主函数
  ********************/
 int main() {
-	return 0;
-	// return World::getInstance()->run();
+	return World::getInstance()->run("RAY");
 }

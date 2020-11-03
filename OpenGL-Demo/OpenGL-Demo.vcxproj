@@ -150,6 +150,7 @@
     <ClCompile Include="glad.c" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="stb_image.cpp" />
+    <ClCompile Include="test.cpp" />
     <ClCompile Include="world.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -158,6 +159,8 @@
     <None Include="shader\light_shader.vs" />
     <None Include="shader\object_shader.fs" />
     <None Include="shader\object_shader.vs" />
+    <None Include="shader\ray_shader.fs" />
+    <None Include="shader\ray_shader.vs" />
     <None Include="shader\skybox_shader.fs" />
     <None Include="shader\skybox_shader.vs" />
   </ItemGroup>
