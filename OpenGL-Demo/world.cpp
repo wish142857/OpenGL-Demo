@@ -557,17 +557,19 @@ int World::runRayMode() {
     glm::vec3 viewUp = glm::vec3(0.0f, 1.0f, 0.0f);
     glm::vec3 viewRight = glm::normalize(glm::cross(viewFront, viewUp));
     bool isPainted = false;
-    std::vector<std::vector<glm::vec3>> color(sreenWidth, std::vector<glm::vec3>(sreenHeight));
     // --- 开始循环 ---
     while (!glfwWindowShouldClose(window)) {
-        std::cout << "WORLD::UPDATE" << std::endl;
-
         // --- 计时器 ---
         float currentFrame = float(glfwGetTime());
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
         // - 处理输入 -
         processInput(window);
+        // - 判断是否已绘制 -
+        if (isPainted) {
+            glfwPollEvents();
+            continue;
+        }
         // - 清空缓冲 -
         glClearColor(0.3, 0.3, 0.3, 1.0f);       // 设置清空填充颜色
         glClear(GL_COLOR_BUFFER_BIT);            // 清空颜色缓冲
@@ -580,7 +582,7 @@ int World::runRayMode() {
         rayShader->use();
         glBindVertexArray(pointVAO);
         if (!isPainted) {
-            std::cout << "WORLD::REPAINT" << std::endl;
+            // std::cout << "WORLD::REPAINT" << std::endl;
             for (unsigned int i = 0; i < sreenWidth; i++)
                 for (unsigned int j = 0; j < sreenHeight; j++) {
                     // 将像素坐标分量映射到[0, 1]
@@ -588,29 +590,17 @@ int World::runRayMode() {
                     rayShader->setVec2("screenPos", pos.x, pos.y);
 
                     // 计算像素在世界坐标中的位置
-                    // glm::vec3 globalPos = viewPos + viewFront + pos.x * viewRight * (float(sreenWidth) / sreenHeight) + pos.y * viewUp;
-                    glm::vec3 globalPos = camera->position + camera->front + pos.x * camera->right * (float(sreenWidth) / sreenHeight) + pos.y * camera->up;
+                    glm::vec3 globalPos = viewPos + viewFront + pos.x * viewRight * (float(sreenWidth) / sreenHeight) + pos.y * viewUp;
+                    // glm::vec3 globalPos = camera->position + camera->front + pos.x * camera->right * (float(sreenWidth) / sreenHeight) + pos.y * camera->up;
                     // 计算出光线并进行光线追踪
-                    // RayTracing::Ray ray(viewPos, globalPos);
-                    RayTracing::Ray ray(camera->position, globalPos);
-                    color[i][j] = scene.traceRay(ray);
+                    RayTracing::Ray ray(viewPos, globalPos);
+                    // RayTracing::Ray ray(camera->position, globalPos);
 
                     // 绘制该处的像素
-                    rayShader->setVec3("vertexColor", color[i][j]);
+                    rayShader->setVec3("vertexColor", scene.traceRay(ray));
                     glDrawArrays(GL_POINTS, 0, 1);
                 }
             isPainted = true;
-        }
-        else {
-            for (unsigned int i = 0; i < sreenWidth; i++)
-                for (unsigned int j = 0; j < sreenHeight; j++) {
-                    // 将像素坐标分量映射到[0, 1]
-                    glm::vec3 pos(float(i) * 2 / sreenWidth - 1.0f, float(j) * 2 / sreenHeight - 1.0f, 0.0f);
-                    rayShader->setVec2("screenPos", pos.x, pos.y);
-                    // 绘制该处的像素
-                    rayShader->setVec3("vertexColor", color[i][j]);
-                    glDrawArrays(GL_POINTS, 0, 1);
-                }
         }
         // --- 渲染完毕 ---
         // - 交换颜色缓冲 -
