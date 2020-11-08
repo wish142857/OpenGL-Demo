@@ -420,7 +420,7 @@ int World::runRayMode() {
     // - 初始化 stb_image -
     stbi_set_flip_vertically_on_load(false);
     // - 创建并初始化相机 -
-    camera = new Camera(glm::vec3(0.0f, 0.2f, 1.0f));
+    camera = new Camera(glm::vec3(0.0f, 2.0f, 3.0f));
     lastX = sreenWidth / 2.0f;
     lastY = sreenHeight / 2.0f;
     firstMouse = true;
@@ -475,6 +475,11 @@ int World::runRayMode() {
     plane->material = planeMaterial;
     scene.addEntity(plane);
 
+
+    plane = new RayTracing::Plane(glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+    plane->material = planeMaterial;
+    scene.addEntity(plane);
+
     RayTracing::Material ballMaterial;
     ballMaterial.kShade = 0.6f;
     ballMaterial.kReflect = 0.2f;
@@ -492,7 +497,7 @@ int World::runRayMode() {
     ballMaterial.shininess = [](const glm::vec3& pos)->float {
         return 32.0f;
     };
-    RayTracing::Sphere* ball = new RayTracing::Sphere(glm::vec3(0.0f, 1.0f, 0.0f), 1.0f);
+    RayTracing::Sphere* ball = new RayTracing::Sphere(glm::vec3(0.0f, 2.0f, 0.0f), 1.0f);
     ball->material = ballMaterial;
     scene.addEntity(ball);
     /*
@@ -544,14 +549,19 @@ int World::runRayMode() {
     }
     */
 
+    // --------------------
+    // [glfw/glad] 渲染循环
+    // --------------------
     glm::vec3 viewPos = glm::vec3(0.0f, 2.0f, 3.0f);
     glm::vec3 viewFront = glm::vec3(0, 0, -1);
     glm::vec3 viewUp = glm::vec3(0.0f, 1.0f, 0.0f);
     glm::vec3 viewRight = glm::normalize(glm::cross(viewFront, viewUp));
-    // --------------------
-    // [glfw/glad] 渲染循环
-    // --------------------
+    bool isPainted = false;
+    std::vector<std::vector<glm::vec3>> color(sreenWidth, std::vector<glm::vec3>(sreenHeight));
+    // --- 开始循环 ---
     while (!glfwWindowShouldClose(window)) {
+        std::cout << "WORLD::UPDATE" << std::endl;
+
         // --- 计时器 ---
         float currentFrame = float(glfwGetTime());
         deltaTime = currentFrame - lastFrame;
@@ -569,24 +579,39 @@ int World::runRayMode() {
         // --- 开始渲染 ---
         rayShader->use();
         glBindVertexArray(pointVAO);
-        for (unsigned int i = 0; i < sreenWidth; i++)
-            for (unsigned int j = 0; j < sreenHeight; j++) {
-                // 将像素坐标分量映射到[0, 1]
-                glm::vec3 pos(float(i) * 2 / sreenWidth - 1.0f, float(j) * 2 / sreenHeight - 1.0f, 0.0f);
-                rayShader->setVec2("screenPos", pos.x, pos.y);
+        if (!isPainted) {
+            std::cout << "WORLD::REPAINT" << std::endl;
+            for (unsigned int i = 0; i < sreenWidth; i++)
+                for (unsigned int j = 0; j < sreenHeight; j++) {
+                    // 将像素坐标分量映射到[0, 1]
+                    glm::vec3 pos(float(i) * 2 / sreenWidth - 1.0f, float(j) * 2 / sreenHeight - 1.0f, 0.0f);
+                    rayShader->setVec2("screenPos", pos.x, pos.y);
 
-                // 计算像素在世界坐标中的位置
-                glm::vec3 globalPos = viewPos + viewFront + pos.x * viewRight * (float(sreenWidth) / sreenHeight) + pos.y * viewUp;
+                    // 计算像素在世界坐标中的位置
+                    // glm::vec3 globalPos = viewPos + viewFront + pos.x * viewRight * (float(sreenWidth) / sreenHeight) + pos.y * viewUp;
+                    glm::vec3 globalPos = camera->position + camera->front + pos.x * camera->right * (float(sreenWidth) / sreenHeight) + pos.y * camera->up;
+                    // 计算出光线并进行光线追踪
+                    // RayTracing::Ray ray(viewPos, globalPos);
+                    RayTracing::Ray ray(camera->position, globalPos);
+                    color[i][j] = scene.traceRay(ray);
 
-                // 计算出光线并进行光线追踪
-                RayTracing::Ray ray(viewPos, globalPos);
-                glm::vec3 color = scene.traceRay(ray);
-
-                // 绘制该处的像素
-                rayShader->setVec3("vertexColor", color);
-                glDrawArrays(GL_POINTS, 0, 1);
-            }
-
+                    // 绘制该处的像素
+                    rayShader->setVec3("vertexColor", color[i][j]);
+                    glDrawArrays(GL_POINTS, 0, 1);
+                }
+            isPainted = true;
+        }
+        else {
+            for (unsigned int i = 0; i < sreenWidth; i++)
+                for (unsigned int j = 0; j < sreenHeight; j++) {
+                    // 将像素坐标分量映射到[0, 1]
+                    glm::vec3 pos(float(i) * 2 / sreenWidth - 1.0f, float(j) * 2 / sreenHeight - 1.0f, 0.0f);
+                    rayShader->setVec2("screenPos", pos.x, pos.y);
+                    // 绘制该处的像素
+                    rayShader->setVec3("vertexColor", color[i][j]);
+                    glDrawArrays(GL_POINTS, 0, 1);
+                }
+        }
         // --- 渲染完毕 ---
         // - 交换颜色缓冲 -
         glfwSwapBuffers(window);
@@ -597,11 +622,17 @@ int World::runRayMode() {
     // [glfw] 销毁窗口
     // ---------------
     glfwTerminate();
+    // - 销毁实体 -
+
+
+    // - 销毁相机 -
     if (camera)
         delete camera;
+    // - 销毁着色器 -
     if (rayShader)
         delete rayShader;
     camera = nullptr;
+    rayShader = nullptr;
     return 0;
 }
 
@@ -611,7 +642,6 @@ int World::runRayMode() {
  ********************/
 void World::processInput(GLFWwindow* window) {
     static bool bCameraPrint = true;
-
     // --- ESC 键按下 ---
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
         glfwSetWindowShouldClose(window, true); // 设置窗口关闭标记

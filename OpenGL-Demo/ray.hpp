@@ -4,12 +4,16 @@
 
 #include <algorithm>
 #include <functional>
+#include <unordered_map>
 #include <vector>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+
 namespace RayTracing {
+	static bool RAY_TRACING_SPEED_MODE = false;		// 是否开启光线追踪加速算法
+
 	static const float FLOAT_INF = 1e8;
 	static const float FLOAT_EPS = 1e-5;
 
@@ -87,10 +91,17 @@ namespace RayTracing {
 	/********************
 	* [类] 实体类
 	********************/
+	enum class EntityType {
+		Plane = 0,		// 平面
+		Triangle = 0,	// 三角面
+		Sphere =0,		// 球体
+	};
 	class Entity {
 	public:
 		// - [变量] 材质 -
 		Material material;
+		// - [虚函数] 获取实体类型 -
+		virtual EntityType getEntityType() const = 0;
 		// - [虚函数] 判断点是否在实体上 -
 		virtual bool isPointInEntity(const glm::vec3& p) const = 0;
 		// - [虚函数] 判断光线源是否在实体内部 -
@@ -112,6 +123,10 @@ namespace RayTracing {
 		glm::vec3 normal;
 		// - [函数] 构造函数 -
 		Plane(const glm::vec3& point, const glm::vec3& normal) : point(point), normal(normal) { }
+		// - [函数] 获取实体类型 -
+		EntityType getEntityType() const {
+			return EntityType::Plane;
+		}
 		// - [函数] 判断点是否在平面上 -
 		bool isPointInEntity(const glm::vec3& p) const {
 			return glm::dot(p - point, normal) == 0;
@@ -147,6 +162,10 @@ namespace RayTracing {
 		// - [函数] 构造函数 -
 		Triangle(const glm::vec3& A, const glm::vec3& B, const glm::vec3& C) 
 			: vertice{ A, B, C }, normal(glm::normalize(glm::cross(B - A, C - A))), plane(vertice[0], normal) { }
+		// - [函数] 获取实体类型 -
+		EntityType getEntityType() const {
+			return EntityType::Triangle;
+		}
 		// - [函数] 判断点是否在三角上 -
 		bool isPointInEntity(const glm::vec3& p) const {
 			if (!plane.isPointInEntity(p))
@@ -187,6 +206,10 @@ namespace RayTracing {
 		float radius;
 		// - [函数] 构造函数 -
 		Sphere(const glm::vec3& center, float radius) : center(center), radius(radius) { }
+		// - [函数] 获取实体类型 -
+		EntityType getEntityType() const {
+			return EntityType::Sphere;
+		}
 		// - [函数] 判断点是否在球面内 -
 		bool isPointInEntity(const glm::vec3& p) const {
 			return glm::distance(p, center) < radius + FLOAT_EPS;
@@ -221,31 +244,82 @@ namespace RayTracing {
 
 	/********************
 	 * [类] 场景类
+	 * + 八叉树
 	 ********************/
 	class Scene {
 	public:
-		// - [常数] 最大递归次数 -
+		// - [常数] 算法参数 -
+		// 光线追踪最大递归次数
 		static const unsigned int MAX_RECURSION_TIME = 3;
-		// - [函数] 析构函数 -
-		~Scene() {
-			for (Entity* p : entitys)
-				delete p;
-			for (Light* p : lights)
-				delete p;
+		// 八叉树最大深度
+		static const int TREE_MAX_DEPTH = 8;			
+		// 有效空间边界 = 2^TREE_MAX_DEPTH
+		static const int SPACE_BORDER = 256;
+		// 空间坐标倍数 = 100
+		static const int SPACE_TIMES = 100;
+		// - [函数] 计算八叉树编码 -
+		std::string calTreeCode(glm::vec3& p) {
+			char code[TREE_MAX_DEPTH];
+			int x = int(p.x * SPACE_TIMES) + (SPACE_BORDER >> 1), y = int(p.y * SPACE_TIMES) + (SPACE_BORDER >> 1), z = int(p.z * SPACE_TIMES) + (SPACE_BORDER >> 1);
+			if (x < 0 || x >= SPACE_BORDER || y < 0 || y >= SPACE_BORDER || z < 0 || z >= SPACE_BORDER)
+				return std::string();
+			for (int i = TREE_MAX_DEPTH - 1; i >= 0; i--) {
+				code[i] = (x & 1) + ((y & 1) << 1) + ((z & 1) << 2);
+				x >>= 1; y >>= 1; z >>= 1;
+			}
+			return std::string(code);
 		}
-		// - [函数] 添加实体函数 -
-		void addEntity(Entity* entity) {
-			entitys.push_back(entity);
+		// - [函数] 归并八叉树编码 -
+		std::string mergeTreeCode(std::string& code1, std::string& code2) {
+			unsigned int i = 0, l1 = code1.length(), l2 = code2.length();
+			while (i < l1 && i < l2 && code1[i] == code2[i])
+				i++;
+			return code1.substr(0, i);
 		}
 		// - [函数] 添加光源函数 -
 		void addLight(Light* light) {
-			lights.push_back(light);
+			lightList.push_back(light);
+		}
+		// - [函数] 添加实体函数 -
+		bool addEntity(Entity* entity) {
+			if (RAY_TRACING_SPEED_MODE) {
+				if (entity->getEntityType() == EntityType::Plane) {
+					// 平面 - 置于列表中即可
+					entityList.push_back(entity);
+					return true;
+				}
+				else if (entity->getEntityType() == EntityType::Triangle) {
+					// 三角面 - 置于八叉树集中
+					Triangle* triangle = (Triangle *)(entity);
+					std::string c0 = calTreeCode(triangle->vertice[0]);
+					std::string c1 = calTreeCode(triangle->vertice[1]);
+					std::string c2 = calTreeCode(triangle->vertice[2]);
+					std::string s = mergeTreeCode(c0, c1);
+					s = mergeTreeCode(s, c2);
+					if (s.length() == 0)
+						return false;
+					// for (auto c : s)
+					//   std::cout << char(c + '0');
+					//std::cout << std::endl;
+					entityMap.insert(std::pair<std::string, Entity*>(s, entity));
+					return true;
+				}
+				else if (entity->getEntityType() == EntityType::Sphere) {
+					// 平面 - 置于列表中即可
+					entityList.push_back(entity);
+					return true;
+				}
+			}
+			else {
+				entityList.push_back(entity);
+				return true;
+			}
 		}
 		// - [函数] 计算光线与场景相交点 -
 		std::pair<const Entity*, const glm::vec3&> calIntersection(const Ray& ray) {
 			float minT = FLOAT_INF;
 			const Entity* collidedEntity = nullptr;
-			for (Entity* entity : entitys) {
+			for (Entity* entity : entityList) {
 				float t = entity->calRayCollision(ray);
 				if (t > FLOAT_EPS && t < minT) {
 					minT = t;
@@ -257,7 +331,7 @@ namespace RayTracing {
 		// - [函数] 计算相交点光强 -
 		glm::vec3 calLight(const Entity& entity, glm::vec3 fragPos, const Ray& ray) {
 			glm::vec3 result(0.0f);
-			for (Light* light : lights)
+			for (Light* light : lightList)
 				result += light->calLight(entity.material, fragPos, entity.calNormal(fragPos), ray.direction);
 			return result;
 		}
@@ -299,8 +373,9 @@ namespace RayTracing {
 			return lightIntensity;
 		}
 	private:
-		std::vector<Entity*> entitys;
-		std::vector<Light*> lights;
+		std::vector<Light*> lightList;
+		std::vector<Entity*> entityList;
+		std::unordered_map<std::string, Entity*> entityMap;
 	};
 }
 
