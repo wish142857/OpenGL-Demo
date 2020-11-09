@@ -14,8 +14,8 @@
 namespace RayTracing {
 	static bool RAY_TRACING_SPEED_MODE = false;		// 是否开启光线追踪加速算法
 
-	static const float FLOAT_INF = 1e8;
-	static const float FLOAT_EPS = 1e-5;
+	static const float FLOAT_INF = 1e8f;
+	static const float FLOAT_EPS = 1e-5f;
 
 	/********************
 	 * [结构] 材质结构
@@ -257,6 +257,10 @@ namespace RayTracing {
 		static const int SPACE_BORDER = 256;
 		// 空间坐标倍数 = 100
 		static const int SPACE_TIMES = 100;
+		// - [函数] 析构函数 -
+		~Scene() {
+			// TODO
+		}
 		// - [函数] 计算八叉树编码 -
 		std::string calTreeCode(glm::vec3& p) {
 			char code[TREE_MAX_DEPTH];
@@ -271,7 +275,7 @@ namespace RayTracing {
 		}
 		// - [函数] 归并八叉树编码 -
 		std::string mergeTreeCode(std::string& code1, std::string& code2) {
-			unsigned int i = 0, l1 = code1.length(), l2 = code2.length();
+			unsigned int i = 0, l1 = (unsigned int)(code1.length()), l2 = (unsigned int)(code2.length());
 			while (i < l1 && i < l2 && code1[i] == code2[i])
 				i++;
 			return code1.substr(0, i);
@@ -314,6 +318,7 @@ namespace RayTracing {
 				entityList.push_back(entity);
 				return true;
 			}
+			return false;
 		}
 		// - [函数] 计算光线与场景相交点 -
 		std::pair<const Entity*, const glm::vec3&> calIntersection(const Ray& ray) {
@@ -341,7 +346,8 @@ namespace RayTracing {
 			if (recursionTime >= MAX_RECURSION_TIME)
 				return lightIntensity;
 
-			const auto& entityAndPoint = calIntersection(ray);
+			std::pair<const Entity*, const glm::vec3&> entityAndPoint = calIntersection(ray);
+
 			const Entity* collidedEntity = entityAndPoint.first;
 			if (!collidedEntity)
 				return lightIntensity;
@@ -351,7 +357,7 @@ namespace RayTracing {
 			bool isInEntity = collidedEntity->isRayInEntity(ray);
 			if (isInEntity)
 				normal = -normal;
-			
+
 			// - 局部光照强度 -
 			if (!isInEntity)
 				lightIntensity = collidedEntity->material.kShade * calLight(*collidedEntity, collidedPoint, ray);

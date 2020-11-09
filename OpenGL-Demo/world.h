@@ -34,6 +34,13 @@ const std::string LIGHT_SHADER_VS_PATH = "shader/light_shader.vs";
 const std::string LIGHT_SHADER_FS_PATH = "shader/light_shader.fs";
 const std::string RAY_SHADER_VS_PATH = "shader/ray_shader.vs";
 const std::string RAY_SHADER_FS_PATH = "shader/ray_shader.fs";
+const std::pair<std::string, std::string> STD_MODEL_1 = { "bun_zipper", "resources/objects/std/bun_zipper.ply" };
+const std::pair<std::string, std::string> STD_MODEL_2 = { "dragon_vrip", "resources/objects/std/dragon_vrip.ply" };
+const std::pair<std::string, std::string> STD_MODEL_3 = { "happy_vrip", "resources/objects/std/happy_vrip.ply" };
+const std::pair<std::string, std::string> RAY_MODEL_1 = { "bun_zipper", "resources/objects/std/bun_zipper_res4.ply" };
+const std::pair<std::string, std::string> RAY_MODEL_2 = { "dragon_vrip", "resources/objects/std/dragon_vrip_res4.ply" };
+const std::pair<std::string, std::string> RAY_MODEL_3 = { "happy_vrip", "resources/objects/std/happy_vrip_res4.ply" };
+
 
 /********************
  * [结构] 材质结构
@@ -221,9 +228,10 @@ private:
 	unsigned int sreenWidth;	// 屏幕宽度
 	unsigned int sreenHeight;	// 屏幕高度
 	// - 私有函数 -
-	void processInput(GLFWwindow* window);				// 输入处理函数
-	GLuint loadTexture(const char* path);				// 纹理加载函数
-	GLuint loadCubemap(std::vector<std::string> faces);	// 立方体贴图加载函数
+	void processInput(GLFWwindow* window);					// 输入处理函数
+	GLuint loadTexture(const char* path);					// 纹理加载函数
+	GLuint loadCubemap(std::vector<std::string> faces);		// 立方体贴图加载函数
+	bool loadPlyModel(RayTracing::Scene& scene, RayTracing::Material &material, const char* path);	// PLY模型加载函数
 
 	friend void framebufferSizeCallback(GLFWwindow* window, int width, int height); // 窗口尺寸回调函数
 	friend void mouseCallback(GLFWwindow* window, double xpos, double ypos);		// 鼠标移动回调函数

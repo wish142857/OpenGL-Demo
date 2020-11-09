@@ -1,5 +1,6 @@
 #include "world.h"
 
+
 /********************
  * [函数] 运行函数
  ********************/
@@ -173,7 +174,7 @@ int World::runStdMode() {
         // model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
         // model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
         // model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
-        Object* object = new Object("<bun_zipper>", "resources/objects/std/bun_zipper.ply", model, 
+        Object* object = new Object(STD_MODEL_1.first, STD_MODEL_1.second, model,
             glm::vec3(-0.4f, -0.2f, -0.6f), glm::vec3(0.4f, 0.2f, 0.6f));
         object->useMap = false;
         object->material.ambient = glm::vec3(0.19225f, 0.19225f, 0.19225f);
@@ -188,7 +189,7 @@ int World::runStdMode() {
         model = glm::translate(model, glm::vec3(-0.3f, 0.0f, 0.0f));
         // model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
         // model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
-        Object* object = new Object("<dragon_vrip>", "resources/objects/std/dragon_vrip.ply", model,
+        Object* object = new Object(STD_MODEL_2.first, STD_MODEL_2.second, model,
             glm::vec3(-0.4f, -0.2f, -0.6f), glm::vec3(0.4f, 0.2f, 0.6f));
         object->useMap = false;
         object->material.ambient = glm::vec3(0.24725f, 0.1995f, 0.0745f);
@@ -203,7 +204,7 @@ int World::runStdMode() {
         model = glm::translate(model, glm::vec3(0.2f, 0.0f, 0.0f));
         // model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
         // model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
-        Object* object = new Object("<happy_vrip>", "resources/objects/std/happy_vrip.ply", model,
+        Object* object = new Object(STD_MODEL_3.first, STD_MODEL_3.second, model,
             glm::vec3(-0.4f, -0.2f, -0.6f), glm::vec3(0.4f, 0.2f, 0.6f));
         object->useMap = false;
         object->material.ambient = glm::vec3(0.19125f, 0.0735f, 0.0225f);
@@ -449,106 +450,77 @@ int World::runRayMode() {
         glm::vec3(1.0f, 1.0f, 1.0f),
         glm::vec3(-0.5f, -1.0f, -1.0f)
     ));
-    RayTracing::Material planeMaterial;
-    planeMaterial.kShade = 0.7f;
-    planeMaterial.kReflect = 0.3f;
-    planeMaterial.kRefract = 0.0f;
-    auto isBlack = [](const glm::vec3& pos) {
-        return fmod(floor(pos.x) + floor(pos.z), 2) == 0;
-    };
-    planeMaterial.ambient = [=](const glm::vec3& pos)->glm::vec3 {
-        glm::vec3 color(1.0f, 1.0f, 1.0f);
-        return isBlack(pos) ? color : glm::vec3(1.0f, 1.0f, 1.0f) - color;
-    };
-    planeMaterial.diffuse = [=](const glm::vec3& pos)->glm::vec3 {
-        glm::vec3 color(1.0f, 1.0f, 1.0f);
-        return isBlack(pos) ? color : glm::vec3(1.0f, 1.0f, 1.0f) - color;
-    };
-    planeMaterial.specular = [=](const glm::vec3& pos)->glm::vec3 {
-        glm::vec3 color(1.0f, 1.0f, 1.0f);
-        return isBlack(pos) ? color : glm::vec3(1.0f, 1.0f, 1.0f) - color;
-    };
-    planeMaterial.shininess = [](const glm::vec3& pos)->float {
-        return 32.0f;
-    };
-    RayTracing::Plane* plane = new RayTracing::Plane(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-    plane->material = planeMaterial;
-    scene.addEntity(plane);
-
-
-    plane = new RayTracing::Plane(glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-    plane->material = planeMaterial;
-    scene.addEntity(plane);
-
-    RayTracing::Material ballMaterial;
-    ballMaterial.kShade = 0.6f;
-    ballMaterial.kReflect = 0.2f;
-    ballMaterial.kRefract = 0.2f;
-    ballMaterial.refractiveIndex = 1.5f;
-    ballMaterial.ambient = [](const glm::vec3& pos)->glm::vec3 {
-        return { 1.0f, 1.0f, 1.0f };
-    };
-    ballMaterial.diffuse = [](const glm::vec3& pos)->glm::vec3 {
-        return { 1.0f, 1.0f, 1.0f };
-    };
-    ballMaterial.specular = [](const glm::vec3& pos)->glm::vec3 {
-        return  { 0.6f, 0.6f, 0.6f };
-    };
-    ballMaterial.shininess = [](const glm::vec3& pos)->float {
-        return 32.0f;
-    };
-    RayTracing::Sphere* ball = new RayTracing::Sphere(glm::vec3(0.0f, 2.0f, 0.0f), 1.0f);
-    ball->material = ballMaterial;
-    scene.addEntity(ball);
-    /*
-    objects.clear();
     {
-        // - 加载模型 1.bun_zipper -
-        glm::mat4 model = glm::mat4(1.0f);
-        // model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
-        // model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-        // model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
-        Object* object = new Object("<bun_zipper>", "resources/objects/std/bun_zipper.ply", model,
-            glm::vec3(-0.4f, -0.2f, -0.6f), glm::vec3(0.4f, 0.2f, 0.6f));
-        object->useMap = false;
-        object->material.ambient = glm::vec3(0.19225f, 0.19225f, 0.19225f);
-        object->material.diffuse = glm::vec3(0.50754f, 0.50754f, 0.50754f);
-        object->material.specular = glm::vec3(0.508273f, 0.508273f, 0.508273f);
-        object->material.shininess = 51.2f;
-        objects.push_back(object);
+        RayTracing::Material planeMaterial;
+        planeMaterial.kShade = 0.7f;
+        planeMaterial.kReflect = 0.3f;
+        planeMaterial.kRefract = 0.0f;
+        planeMaterial.refractiveIndex = 0.0f;
+        auto isBlack = [](const glm::vec3& pos) {
+            return fmod(floor(pos.x) + floor(pos.z), 2) == 0;
+        };
+        planeMaterial.ambient = [=](const glm::vec3& pos)->glm::vec3 {
+            glm::vec3 color(1.0f, 1.0f, 1.0f);
+            return isBlack(pos) ? color : glm::vec3(1.0f, 1.0f, 1.0f) - color;
+        };
+        planeMaterial.diffuse = [=](const glm::vec3& pos)->glm::vec3 {
+            glm::vec3 color(1.0f, 1.0f, 1.0f);
+            return isBlack(pos) ? color : glm::vec3(1.0f, 1.0f, 1.0f) - color;
+        };
+        planeMaterial.specular = [=](const glm::vec3& pos)->glm::vec3 {
+            glm::vec3 color(1.0f, 1.0f, 1.0f);
+            return isBlack(pos) ? color : glm::vec3(1.0f, 1.0f, 1.0f) - color;
+        };
+        planeMaterial.shininess = [](const glm::vec3& pos)->float {
+            return 32.0f;
+        };
+        RayTracing::Plane* plane = new RayTracing::Plane(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+        plane->material = planeMaterial;
+        scene.addEntity(plane);
+
+        plane = new RayTracing::Plane(glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+        plane->material = planeMaterial;
+        scene.addEntity(plane);
     }
     {
-        // - 加载模型 2.dragon_vrip -
-        glm::mat4 model = glm::mat4(1.0f);
-        model = glm::translate(model, glm::vec3(-0.3f, 0.0f, 0.0f));
-        // model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-        // model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
-        Object* object = new Object("<dragon_vrip>", "resources/objects/std/dragon_vrip.ply", model,
-            glm::vec3(-0.4f, -0.2f, -0.6f), glm::vec3(0.4f, 0.2f, 0.6f));
-        object->useMap = false;
-        object->material.ambient = glm::vec3(0.24725f, 0.1995f, 0.0745f);
-        object->material.diffuse = glm::vec3(0.75164f, 0.60648f, 0.22648f);
-        object->material.specular = glm::vec3(0.628281f, 0.555802f, 0.366065f);
-        object->material.shininess = 51.2f;
-        objects.push_back(object);
+        RayTracing::Material ballMaterial;
+        ballMaterial.kShade = 0.6f;
+        ballMaterial.kReflect = 0.2f;
+        ballMaterial.kRefract = 0.2f;
+        ballMaterial.refractiveIndex = 1.5f;
+        ballMaterial.ambient = [](const glm::vec3& pos)->glm::vec3 {
+            return { 1.0f, 1.0f, 1.0f };
+        };
+        ballMaterial.diffuse = [](const glm::vec3& pos)->glm::vec3 {
+            return { 1.0f, 1.0f, 1.0f };
+        };
+        ballMaterial.specular = [](const glm::vec3& pos)->glm::vec3 {
+            return  { 0.6f, 0.6f, 0.6f };
+        };
+        ballMaterial.shininess = [](const glm::vec3& pos)->float {
+            return 32.0f;
+        };
+        RayTracing::Sphere* ball = new RayTracing::Sphere(glm::vec3(0.0f, 2.0f, 0.0f), 1.0f);
+        ball->material = ballMaterial;
+        scene.addEntity(ball);
     }
     {
-        // - 加载模型 3.happy_vrip -
-        glm::mat4 model = glm::mat4(1.0f);
-        model = glm::translate(model, glm::vec3(0.2f, 0.0f, 0.0f));
-        // model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-        // model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
-        Object* object = new Object("<happy_vrip>", "resources/objects/std/happy_vrip.ply", model,
-            glm::vec3(-0.4f, -0.2f, -0.6f), glm::vec3(0.4f, 0.2f, 0.6f));
-        object->useMap = false;
-        object->material.ambient = glm::vec3(0.19125f, 0.0735f, 0.0225f);
-        object->material.diffuse = glm::vec3(0.7038f, 0.27048f, 0.0828f);
-        object->material.specular = glm::vec3(0.256777f, 0.137622f, 0.086014f);
-        object->material.shininess = 12.8f;
-        objects.push_back(object);
+        /*
+        RayTracing::Material material;
+        material.kShade = 0.6f;
+        material.kReflect = 0.2f;
+        material.kRefract = 0.2f;
+        material.refractiveIndex = 1.5f;
+        material.ambient = [](const glm::vec3& pos)->glm::vec3 { return { 1.0f, 1.0f, 1.0f }; };
+        material.diffuse = [](const glm::vec3& pos)->glm::vec3 { return { 1.0f, 1.0f, 1.0f }; };
+        material.specular = [](const glm::vec3& pos)->glm::vec3 { return  { 0.6f, 0.6f, 0.6f }; };
+        material.shininess = [](const glm::vec3& pos)->float { return 32.0f; };
+        if (loadPlyModel(scene, material, RAY_MODEL_1.second.c_str()))
+            std::cout << "INFO::WORLD::LOAD_MODEL_SUCCESFULLY: " << RAY_MODEL_1.first<< std::endl;
+        else
+            std::cout << "ERROR::WORLD::FILE_NOT_SUCCESFULLY_READ" << std::endl;
+        */
     }
-    */
-
     // --------------------
     // [glfw/glad] 渲染循环
     // --------------------
@@ -583,7 +555,7 @@ int World::runRayMode() {
         glBindVertexArray(pointVAO);
         if (!isPainted) {
             // std::cout << "WORLD::REPAINT" << std::endl;
-            for (unsigned int i = 0; i < sreenWidth; i++)
+            for (unsigned int i = 0; i < sreenWidth; i++) {
                 for (unsigned int j = 0; j < sreenHeight; j++) {
                     // 将像素坐标分量映射到[0, 1]
                     glm::vec3 pos(float(i) * 2 / sreenWidth - 1.0f, float(j) * 2 / sreenHeight - 1.0f, 0.0f);
@@ -595,11 +567,16 @@ int World::runRayMode() {
                     // 计算出光线并进行光线追踪
                     RayTracing::Ray ray(viewPos, globalPos);
                     // RayTracing::Ray ray(camera->position, globalPos);
-
+                    glm::vec3 color = scene.traceRay(ray);
+                    // std::cout << color[0] << color[1] << color[2] << std::endl;
                     // 绘制该处的像素
-                    rayShader->setVec3("vertexColor", scene.traceRay(ray));
+                    rayShader->setVec3("vertexColor", color);
                     glDrawArrays(GL_POINTS, 0, 1);
                 }
+                putchar('\r');
+                std::cout << "INFO::WORLD::Render progress: "  << (i + 1) * 100 / sreenWidth << "%";
+            }
+            std::cout << std::endl << "INFO::WORLD::Render scene successfully!" << std::endl;
             isPainted = true;
         }
         // --- 渲染完毕 ---
@@ -613,7 +590,7 @@ int World::runRayMode() {
     // ---------------
     glfwTerminate();
     // - 销毁实体 -
-
+    // TODO
 
     // - 销毁相机 -
     if (camera)
@@ -730,6 +707,60 @@ GLuint World::loadCubemap(std::vector<std::string> faces) {
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 
     return textureID;
+}
+
+
+/********************
+ * [函数] 立方体贴图加载函数
+ * 读取有效三角面并插入场景
+ ********************/
+bool World::loadPlyModel(RayTracing::Scene& scene, RayTracing::Material& material, const char* path) {
+    try {
+        int vertexNum = 0, faceNum = 0;
+        std::string strBuffer;
+        std::ifstream modelFile;
+        std::vector<glm::vec3> vertexList;
+        modelFile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+        modelFile.open("./resources/objects/std/bun_zipper_res4.ply");
+        // - 读取顶点数目 -
+        do { modelFile >> strBuffer; } while (strBuffer != "vertex");
+        modelFile >> vertexNum;
+        // - 读取面数目 -
+        do { modelFile >> strBuffer; } while (strBuffer != "face");
+        modelFile >> faceNum;
+        do { modelFile >> strBuffer; } while (strBuffer != "end_header");
+        getline(modelFile, strBuffer);
+        // - 读取点数据 -
+        glm::vec3 vertex;
+        for (int i = 0; i < vertexNum; i++) {
+            getline(modelFile, strBuffer);
+            sscanf_s(strBuffer.c_str(), "%f %f %f", &vertex.x, &vertex.y, &vertex.z);
+            
+            // vertex.y += 2.0f;
+
+            vertexList.push_back(vertex);
+        }
+        // - 读取面数据 -
+        int pointNum = 0, A = 0, B = 0, C = 0;
+        int t = 0;
+        for (int i = 0; i < faceNum; i++) {
+            modelFile >> pointNum;
+            if (pointNum != 3)
+                for (int j = 0; j < pointNum; j++) modelFile >> A;
+            else {
+                modelFile >> A >> B >> C;
+                // 添加三角面
+                RayTracing::Triangle* triangle = new RayTracing::Triangle(vertexList[A], vertexList[B], vertexList[C]);
+                triangle->material = material;
+                scene.addEntity(triangle);
+            }
+        }
+        modelFile.close();
+        return true;
+    }
+    catch (std::ifstream::failure& e) {
+        return false;
+    }
 }
 
 

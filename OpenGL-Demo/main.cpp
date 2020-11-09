@@ -1,5 +1,6 @@
 #include <iostream>
 #include "world.h"
+using namespace std;
 
 World World::world;		// 构造单体实例对象
 
@@ -16,6 +17,7 @@ int main() {
 		std::cout << "Main::Please input 'STD' 'RAY' or 'SPR'." << std::endl;
 		std::cout << "<World> ";
 		std::cin >> cmd;
+		std::cout << std::endl;
 		if (cmd == "EXIT") { return 0; }
 		if (cmd == "STD") { return World::getInstance()->run("STD"); }
 		if (cmd == "RAY") { RayTracing::RAY_TRACING_SPEED_MODE = false; return World::getInstance()->run("RAY"); }
