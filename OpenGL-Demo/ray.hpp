@@ -251,15 +251,15 @@ namespace RayTracing {
 		// 是否开启光线追踪加速算法
 		bool RAY_TRACING_SPEED_MODE = false;
 		// 光线追踪最大递归次数
-		static const unsigned int MAX_RECURSION_TIME = 2;
+		unsigned int MAX_RECURSION_TIME = 2;
 		// 八叉树最大深度
 		static const int TREE_MAX_DEPTH = 10;
 		// 八叉树有效深度 TREE_VALID_DEPTH < TREE_MAX_DEPTH
 		static const int TREE_VALID_DEPTH = 3;
 		// 有效空间边界 = 2 ^ TREE_MAX_DEPTH
 		static const int SPACE_BORDER = 1024;
-		// 有效子空间半径 = SPACE_BORDER / 2 ^ TREE_VALID_DEPTH / 2
-		static const int SUB_SPACE_RADIUS = 64;
+		// 有效子空间半径 = SPACE_BORDER / 2 ^ TREE_VALID_DEPTH / 2 * sqrt(3)
+		static const int SUB_SPACE_RADIUS = 100;
 		// 空间坐标倍数 = 100
 		static const int SPACE_TIMES = 100;
 		// - [函数] 析构函数 -
@@ -328,13 +328,8 @@ namespace RayTracing {
 					std::string c0 = calTreeCode(triangle->vertice[0]);
 					std::string c1 = calTreeCode(triangle->vertice[1]);
 					std::string c2 = calTreeCode(triangle->vertice[2]);
-					std::string s = mergeTreeCode(c0, c1, c2);
-					//if (s.length() == 0) {
-					//	std::cout << "SUCK" << std::endl;
-					//	return false;
-					//}
+					std::string s = mergeTreeCode(c0, c1, c2);					
 					entityMap[s].insert(entity);
-					// std::cout << c0 << "--" << c1 << "--" << c2 << "--" << s << std::endl;
 					return;
 				}
 				if (entity->getEntityType() == EntityType::Plane) {
@@ -355,24 +350,15 @@ namespace RayTracing {
 		std::pair<const Entity*, const glm::vec3&> calIntersection(const Ray& ray) {
 			float minT = FLOAT_INF;
 			const Entity* collidedEntity = nullptr;
-			for (Entity* entity : entityList) {
-				float t = entity->calRayCollision(ray);
-				if (t > FLOAT_EPS && t < minT) {
-					minT = t;
-					collidedEntity = entity;
-				}
-			}
 			if (RAY_TRACING_SPEED_MODE) {
 				for (const auto& p : entityMap) {
-					// TODO
-					if (p.first.length() == TREE_VALID_DEPTH) {
-						Sphere sphere(calSubSpaceCenter(p.first), float(SUB_SPACE_RADIUS));
-						float t = sphere.calRayCollision(ray);
-						if (t <= FLOAT_EPS || t >= minT)
-							continue;
-					}
-
-
+					//if (p.first.length() == TREE_VALID_DEPTH) {
+					//	Sphere sphere(calSubSpaceCenter(p.first), float(SUB_SPACE_RADIUS) / SPACE_TIMES);
+					//	float t = sphere.calRayCollision(ray);
+					//	if (t <= FLOAT_EPS || t >= minT) {
+					//		continue;
+					//	}
+					//}
 					for (const auto& entity : p.second) {
 						float t = entity->calRayCollision(ray);
 						if (t > FLOAT_EPS && t < minT) {
@@ -382,7 +368,18 @@ namespace RayTracing {
 					}
 				}
 			}
+			for (Entity* entity : entityList) {
+				float t = entity->calRayCollision(ray);
+				if (t > FLOAT_EPS && t < minT) {
+					minT = t;
+					collidedEntity = entity;
+				}
+			}
 			return std::pair<const Entity*, const glm::vec3&>(collidedEntity, ray.getPoint(minT));
+
+		}
+		std::pair<const Entity*, const glm::vec3&> calIntersectionSpeedy(const Ray& ray) {
+
 		}
 		// - [函数] 计算相交点光强 -
 		glm::vec3 calLight(const Entity& entity, glm::vec3 fragPos, const Ray& ray) {

@@ -563,13 +563,16 @@ int World::runRayMode(bool isSpeedy) {
                     // 将像素坐标分量映射到[0, 1]
                     glm::vec3 pos(float(i) * 2 / sreenWidth - 1.0f, float(j) * 2 / sreenHeight - 1.0f, 0.0f);
                     rayShader->setVec2("screenPos", pos.x, pos.y);
-
                     // 计算像素在世界坐标中的位置
                     glm::vec3 globalPos = viewPos + viewFront + pos.x * viewRight * (float(sreenWidth) / sreenHeight) + pos.y * viewUp;
                     // glm::vec3 globalPos = camera->position + camera->front + pos.x * camera->right * (float(sreenWidth) / sreenHeight) + pos.y * camera->up;
                     // 计算出光线并进行光线追踪
                     RayTracing::Ray ray(viewPos, globalPos);
                     // RayTracing::Ray ray(camera->position, globalPos);
+                    if (isSpeedy && (sreenHeight) - j < (sreenHeight >> 2))
+                        scene.MAX_RECURSION_TIME = 1;
+                    else
+                        scene.MAX_RECURSION_TIME = 2;
                     glm::vec3 color = scene.traceRay(ray);
                     // std::cout << color[0] << color[1] << color[2] << std::endl;
                     // 绘制该处的像素                    
