@@ -483,6 +483,7 @@ int World::runRayMode() {
         scene.addEntity(plane);
     }
     {
+        /*
         RayTracing::Material ballMaterial;
         ballMaterial.kShade = 0.6f;
         ballMaterial.kReflect = 0.2f;
@@ -503,9 +504,9 @@ int World::runRayMode() {
         RayTracing::Sphere* ball = new RayTracing::Sphere(glm::vec3(0.0f, 2.0f, 0.0f), 1.0f);
         ball->material = ballMaterial;
         scene.addEntity(ball);
+        */
     }
     {
-        /*
         RayTracing::Material material;
         material.kShade = 0.6f;
         material.kReflect = 0.2f;
@@ -519,13 +520,12 @@ int World::runRayMode() {
             std::cout << "INFO::WORLD::LOAD_MODEL_SUCCESFULLY: " << RAY_MODEL_1.first<< std::endl;
         else
             std::cout << "ERROR::WORLD::FILE_NOT_SUCCESFULLY_READ" << std::endl;
-        */
     }
     // --------------------
     // [glfw/glad] 渲染循环
     // --------------------
     glm::vec3 viewPos = glm::vec3(0.0f, 2.0f, 3.0f);
-    glm::vec3 viewFront = glm::vec3(0, 0, -1);
+    glm::vec3 viewFront = glm::vec3(0, 0, -1.0f);
     glm::vec3 viewUp = glm::vec3(0.0f, 1.0f, 0.0f);
     glm::vec3 viewRight = glm::normalize(glm::cross(viewFront, viewUp));
     bool isPainted = false;
@@ -569,7 +569,7 @@ int World::runRayMode() {
                     // RayTracing::Ray ray(camera->position, globalPos);
                     glm::vec3 color = scene.traceRay(ray);
                     // std::cout << color[0] << color[1] << color[2] << std::endl;
-                    // 绘制该处的像素
+                    // 绘制该处的像素                    
                     rayShader->setVec3("vertexColor", color);
                     glDrawArrays(GL_POINTS, 0, 1);
                 }
@@ -589,9 +589,6 @@ int World::runRayMode() {
     // [glfw] 销毁窗口
     // ---------------
     glfwTerminate();
-    // - 销毁实体 -
-    // TODO
-
     // - 销毁相机 -
     if (camera)
         delete camera;
@@ -711,7 +708,7 @@ GLuint World::loadCubemap(std::vector<std::string> faces) {
 
 
 /********************
- * [函数] 立方体贴图加载函数
+ * [函数] PLY模型加载函数
  * 读取有效三角面并插入场景
  ********************/
 bool World::loadPlyModel(RayTracing::Scene& scene, RayTracing::Material& material, const char* path) {
@@ -721,7 +718,7 @@ bool World::loadPlyModel(RayTracing::Scene& scene, RayTracing::Material& materia
         std::ifstream modelFile;
         std::vector<glm::vec3> vertexList;
         modelFile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-        modelFile.open("./resources/objects/std/bun_zipper_res4.ply");
+        modelFile.open(path);
         // - 读取顶点数目 -
         do { modelFile >> strBuffer; } while (strBuffer != "vertex");
         modelFile >> vertexNum;
@@ -734,10 +731,11 @@ bool World::loadPlyModel(RayTracing::Scene& scene, RayTracing::Material& materia
         glm::vec3 vertex;
         for (int i = 0; i < vertexNum; i++) {
             getline(modelFile, strBuffer);
-            sscanf_s(strBuffer.c_str(), "%f %f %f", &vertex.x, &vertex.y, &vertex.z);
-            
-            // vertex.y += 2.0f;
-
+            sscanf_s(strBuffer.c_str(), "%f %f %f", &vertex[0], &vertex[1], &vertex[2]);
+            vertex[2] -= 0.05f;
+            vertex[0] *= 20;
+            vertex[1] *= 20;
+            vertex[2] *= 20;
             vertexList.push_back(vertex);
         }
         // - 读取面数据 -

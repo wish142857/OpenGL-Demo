@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <functional>
+#include <set>
 #include <unordered_map>
 #include <vector>
 #include <glm/glm.hpp>
@@ -12,10 +13,10 @@
 
 
 namespace RayTracing {
-	static bool RAY_TRACING_SPEED_MODE = false;		// 是否开启光线追踪加速算法
+	static bool RAY_TRACING_SPEED_MODE = true;		// 是否开启光线追踪加速算法
 
 	static const float FLOAT_INF = 1e8f;
-	static const float FLOAT_EPS = 1e-5f;
+	static const float FLOAT_EPS = 1e-2f;
 
 	/********************
 	 * [结构] 材质结构
@@ -93,8 +94,8 @@ namespace RayTracing {
 	********************/
 	enum class EntityType {
 		Plane = 0,		// 平面
-		Triangle = 0,	// 三角面
-		Sphere =0,		// 球体
+		Triangle = 1,	// 三角面
+		Sphere =2,		// 球体
 	};
 	class Entity {
 	public:
@@ -129,7 +130,7 @@ namespace RayTracing {
 		}
 		// - [函数] 判断点是否在平面上 -
 		bool isPointInEntity(const glm::vec3& p) const {
-			return glm::dot(p - point, normal) == 0;
+			return abs(glm::dot(p - point, normal)) < FLOAT_EPS;
 		}
 		// - [函数] 判断光线源是否在实体内部 -
 		bool isRayInEntity(const Ray& ray) const {
@@ -168,8 +169,8 @@ namespace RayTracing {
 		}
 		// - [函数] 判断点是否在三角上 -
 		bool isPointInEntity(const glm::vec3& p) const {
-			if (!plane.isPointInEntity(p))
-				return false;
+			//if (!plane.isPointInEntity(p))
+			//	return false;
 			glm::vec3 v2p[3];
 			glm::vec3 c[3];
 			for (int i = 0; i < 3; i++)
@@ -250,33 +251,39 @@ namespace RayTracing {
 	public:
 		// - [常数] 算法参数 -
 		// 光线追踪最大递归次数
-		static const unsigned int MAX_RECURSION_TIME = 3;
+		static const unsigned int MAX_RECURSION_TIME = 2;
 		// 八叉树最大深度
-		static const int TREE_MAX_DEPTH = 8;			
+		static const int TREE_MAX_DEPTH = 10;
+		// 八叉树有效深度
+		static const int TREE_VALID_DEPTH = 5;
 		// 有效空间边界 = 2^TREE_MAX_DEPTH
-		static const int SPACE_BORDER = 256;
+		static const int SPACE_BORDER = 1024;
 		// 空间坐标倍数 = 100
 		static const int SPACE_TIMES = 100;
 		// - [函数] 析构函数 -
 		~Scene() {
-			// TODO
+			for (Entity* entity : entityList)
+				delete entity;
+			for (const auto &p : entityMap)
+				for (const auto& e : p.second)
+					delete e;
 		}
 		// - [函数] 计算八叉树编码 -
-		std::string calTreeCode(glm::vec3& p) {
-			char code[TREE_MAX_DEPTH];
+		static std::string calTreeCode(glm::vec3& p) {
+			char code[TREE_MAX_DEPTH + 1] = { 0 };
 			int x = int(p.x * SPACE_TIMES) + (SPACE_BORDER >> 1), y = int(p.y * SPACE_TIMES) + (SPACE_BORDER >> 1), z = int(p.z * SPACE_TIMES) + (SPACE_BORDER >> 1);
 			if (x < 0 || x >= SPACE_BORDER || y < 0 || y >= SPACE_BORDER || z < 0 || z >= SPACE_BORDER)
 				return std::string();
 			for (int i = TREE_MAX_DEPTH - 1; i >= 0; i--) {
-				code[i] = (x & 1) + ((y & 1) << 1) + ((z & 1) << 2);
+				code[i] = (x & 1) + ((y & 1) << 1) + ((z & 1) << 2) + '0';
 				x >>= 1; y >>= 1; z >>= 1;
 			}
-			return std::string(code);
+			return std::string(code).substr(0, TREE_VALID_DEPTH);
 		}
 		// - [函数] 归并八叉树编码 -
-		std::string mergeTreeCode(std::string& code1, std::string& code2) {
-			unsigned int i = 0, l1 = (unsigned int)(code1.length()), l2 = (unsigned int)(code2.length());
-			while (i < l1 && i < l2 && code1[i] == code2[i])
+		std::string mergeTreeCode(std::string& code1, std::string& code2, std::string& code3) {
+			size_t i = 0, l1 = code1.length(), l2 = code2.length(), l3 = code3.length();
+			while (i < l1 && i < l2 && i < l3 && code1[i] == code2[i] && code1[i] == code3[i])
 				i++;
 			return code1.substr(0, i);
 		}
@@ -287,6 +294,7 @@ namespace RayTracing {
 		// - [函数] 添加实体函数 -
 		bool addEntity(Entity* entity) {
 			if (RAY_TRACING_SPEED_MODE) {
+				EntityType e = entity->getEntityType();
 				if (entity->getEntityType() == EntityType::Plane) {
 					// 平面 - 置于列表中即可
 					entityList.push_back(entity);
@@ -298,14 +306,11 @@ namespace RayTracing {
 					std::string c0 = calTreeCode(triangle->vertice[0]);
 					std::string c1 = calTreeCode(triangle->vertice[1]);
 					std::string c2 = calTreeCode(triangle->vertice[2]);
-					std::string s = mergeTreeCode(c0, c1);
-					s = mergeTreeCode(s, c2);
+					std::string s = mergeTreeCode(c0, c1, c2);
 					if (s.length() == 0)
 						return false;
-					// for (auto c : s)
-					//   std::cout << char(c + '0');
-					//std::cout << std::endl;
-					entityMap.insert(std::pair<std::string, Entity*>(s, entity));
+					entityMap[s].insert(entity);
+					// std::cout << c0 << "--" << c1 << "--" << c2 << "--" << s << std::endl;
 					return true;
 				}
 				else if (entity->getEntityType() == EntityType::Sphere) {
@@ -358,6 +363,8 @@ namespace RayTracing {
 			if (isInEntity)
 				normal = -normal;
 
+
+
 			// - 局部光照强度 -
 			if (!isInEntity)
 				lightIntensity = collidedEntity->material.kShade * calLight(*collidedEntity, collidedPoint, ray);
@@ -376,12 +383,16 @@ namespace RayTracing {
 			if (collidedEntity->material.kRefract > FLOAT_EPS)
 				lightIntensity += collidedEntity->material.kRefract * traceRay(Ray(collidedPoint, collidedPoint + refractDirection), recursionTime + 1);
 
+			//if (lightIntensity[0] < FLOAT_EPS)
+			//	std::cout << "OK" << std::endl;
+
+
 			return lightIntensity;
 		}
 	private:
 		std::vector<Light*> lightList;
 		std::vector<Entity*> entityList;
-		std::unordered_map<std::string, Entity*> entityMap;
+		std::unordered_map<std::string, std::set<Entity *>> entityMap;
 	};
 }
 
