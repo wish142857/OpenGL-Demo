@@ -20,7 +20,7 @@ int main() {
 		std::cout << std::endl;
 		if (cmd == "EXIT") { return 0; }
 		if (cmd == "STD") { return World::getInstance()->run("STD"); }
-		if (cmd == "RAY") { RayTracing::RAY_TRACING_SPEED_MODE = false; return World::getInstance()->run("RAY"); }
-		if (cmd == "SPR") { RayTracing::RAY_TRACING_SPEED_MODE = true; return World::getInstance()->run("RAY"); }
+		if (cmd == "RAY") { return World::getInstance()->run("RAY"); }
+		if (cmd == "SPR") { return World::getInstance()->run("SPR"); }
 	}
 }

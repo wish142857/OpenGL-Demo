@@ -13,8 +13,6 @@
 
 
 namespace RayTracing {
-	static bool RAY_TRACING_SPEED_MODE = true;		// 是否开启光线追踪加速算法
-
 	static const float FLOAT_INF = 1e8f;
 	static const float FLOAT_EPS = 1e-2f;
 
@@ -95,7 +93,7 @@ namespace RayTracing {
 	enum class EntityType {
 		Plane = 0,		// 平面
 		Triangle = 1,	// 三角面
-		Sphere =2,		// 球体
+		Sphere = 2,		// 球体
 	};
 	class Entity {
 	public:
@@ -250,21 +248,33 @@ namespace RayTracing {
 	class Scene {
 	public:
 		// - [常数] 算法参数 -
+		// 是否开启光线追踪加速算法
+		bool RAY_TRACING_SPEED_MODE = false;
 		// 光线追踪最大递归次数
 		static const unsigned int MAX_RECURSION_TIME = 2;
 		// 八叉树最大深度
 		static const int TREE_MAX_DEPTH = 10;
-		// 八叉树有效深度
-		static const int TREE_VALID_DEPTH = 5;
-		// 有效空间边界 = 2^TREE_MAX_DEPTH
+		// 八叉树有效深度 TREE_VALID_DEPTH < TREE_MAX_DEPTH
+		static const int TREE_VALID_DEPTH = 3;
+		// 有效空间边界 = 2 ^ TREE_MAX_DEPTH
 		static const int SPACE_BORDER = 1024;
+		// 有效子空间半径 = SPACE_BORDER / 2 ^ TREE_VALID_DEPTH / 2
+		static const int SUB_SPACE_RADIUS = 64;
 		// 空间坐标倍数 = 100
 		static const int SPACE_TIMES = 100;
 		// - [函数] 析构函数 -
 		~Scene() {
 			for (Entity* entity : entityList)
 				delete entity;
-			for (const auto &p : entityMap)
+			/*
+			for (const auto& p : entityMap) {
+				int t = 0;
+				for (const auto& e : p.second)
+					delete e, t++;
+				std::cout << p.first << "  " << t << std::endl;
+			}
+			*/
+			for (const auto& p : entityMap)
 				for (const auto& e : p.second)
 					delete e;
 		}
@@ -281,49 +291,65 @@ namespace RayTracing {
 			return std::string(code).substr(0, TREE_VALID_DEPTH);
 		}
 		// - [函数] 归并八叉树编码 -
-		std::string mergeTreeCode(std::string& code1, std::string& code2, std::string& code3) {
+		static std::string mergeTreeCode(const std::string& code1, const std::string& code2, const std::string& code3) {
 			size_t i = 0, l1 = code1.length(), l2 = code2.length(), l3 = code3.length();
 			while (i < l1 && i < l2 && i < l3 && code1[i] == code2[i] && code1[i] == code3[i])
 				i++;
 			return code1.substr(0, i);
+		}
+		// - [函数] 计算八叉树子空间中心 -
+		static glm::vec3 calSubSpaceCenter(const std::string& code) {
+			int x = 0, y = 0, z = 0;
+			if (code.length() == TREE_VALID_DEPTH) {
+				for (int i = 0; i < TREE_VALID_DEPTH; i++) {
+					int c = code[i] - '0';
+					x <<= 1; x |= c & 1; c >>= 1;
+					y <<= 1; y |= c & 1; c >>= 1;
+					z <<= 1; z |= c & 1;
+				}
+				x <<= 1; x |= 1; x <<= TREE_MAX_DEPTH - TREE_VALID_DEPTH - 1;
+				y <<= 1; y |= 1; y <<= TREE_MAX_DEPTH - TREE_VALID_DEPTH - 1;
+				z <<= 1; z |= 1; z <<= TREE_MAX_DEPTH - TREE_VALID_DEPTH - 1;
+			}
+			x -= (SPACE_BORDER >> 1); y -= (SPACE_BORDER >> 1); z -= (SPACE_BORDER >> 1);
+			return glm::vec3(float(x) / SPACE_TIMES, float(y) / SPACE_TIMES, float(z) / SPACE_TIMES);
 		}
 		// - [函数] 添加光源函数 -
 		void addLight(Light* light) {
 			lightList.push_back(light);
 		}
 		// - [函数] 添加实体函数 -
-		bool addEntity(Entity* entity) {
+		void addEntity(Entity* entity) {
 			if (RAY_TRACING_SPEED_MODE) {
 				EntityType e = entity->getEntityType();
-				if (entity->getEntityType() == EntityType::Plane) {
-					// 平面 - 置于列表中即可
-					entityList.push_back(entity);
-					return true;
-				}
-				else if (entity->getEntityType() == EntityType::Triangle) {
+				if (entity->getEntityType() == EntityType::Triangle) {
 					// 三角面 - 置于八叉树集中
-					Triangle* triangle = (Triangle *)(entity);
+					Triangle* triangle = (Triangle*)(entity);
 					std::string c0 = calTreeCode(triangle->vertice[0]);
 					std::string c1 = calTreeCode(triangle->vertice[1]);
 					std::string c2 = calTreeCode(triangle->vertice[2]);
 					std::string s = mergeTreeCode(c0, c1, c2);
-					if (s.length() == 0)
-						return false;
+					//if (s.length() == 0) {
+					//	std::cout << "SUCK" << std::endl;
+					//	return false;
+					//}
 					entityMap[s].insert(entity);
 					// std::cout << c0 << "--" << c1 << "--" << c2 << "--" << s << std::endl;
-					return true;
+					return;
 				}
-				else if (entity->getEntityType() == EntityType::Sphere) {
+				if (entity->getEntityType() == EntityType::Plane) {
 					// 平面 - 置于列表中即可
 					entityList.push_back(entity);
-					return true;
+					return;
+				}
+				if (entity->getEntityType() == EntityType::Sphere) {
+					// 球面 - 置于列表中即可
+					entityList.push_back(entity);
+					return;
 				}
 			}
-			else {
-				entityList.push_back(entity);
-				return true;
-			}
-			return false;
+			entityList.push_back(entity);
+			return;
 		}
 		// - [函数] 计算光线与场景相交点 -
 		std::pair<const Entity*, const glm::vec3&> calIntersection(const Ray& ray) {
@@ -334,6 +360,26 @@ namespace RayTracing {
 				if (t > FLOAT_EPS && t < minT) {
 					minT = t;
 					collidedEntity = entity;
+				}
+			}
+			if (RAY_TRACING_SPEED_MODE) {
+				for (const auto& p : entityMap) {
+					// TODO
+					if (p.first.length() == TREE_VALID_DEPTH) {
+						Sphere sphere(calSubSpaceCenter(p.first), float(SUB_SPACE_RADIUS));
+						float t = sphere.calRayCollision(ray);
+						if (t <= FLOAT_EPS || t >= minT)
+							continue;
+					}
+
+
+					for (const auto& entity : p.second) {
+						float t = entity->calRayCollision(ray);
+						if (t > FLOAT_EPS && t < minT) {
+							minT = t;
+							collidedEntity = entity;
+						}
+					}
 				}
 			}
 			return std::pair<const Entity*, const glm::vec3&>(collidedEntity, ray.getPoint(minT));
@@ -350,21 +396,17 @@ namespace RayTracing {
 			glm::vec3 lightIntensity(0.0f);
 			if (recursionTime >= MAX_RECURSION_TIME)
 				return lightIntensity;
-
+			// --- 计算光线交点 ---
 			std::pair<const Entity*, const glm::vec3&> entityAndPoint = calIntersection(ray);
-
 			const Entity* collidedEntity = entityAndPoint.first;
 			if (!collidedEntity)
 				return lightIntensity;
-
+			// --- 计算光照强度 ---
 			glm::vec3 collidedPoint = entityAndPoint.second;
 			glm::vec3 normal = glm::normalize(collidedEntity->calNormal(collidedPoint));
 			bool isInEntity = collidedEntity->isRayInEntity(ray);
 			if (isInEntity)
 				normal = -normal;
-
-
-
 			// - 局部光照强度 -
 			if (!isInEntity)
 				lightIntensity = collidedEntity->material.kShade * calLight(*collidedEntity, collidedPoint, ray);
@@ -382,11 +424,6 @@ namespace RayTracing {
 			glm::vec3 refractDirection = glm::refract(ray.direction, normal, currentIndex / nextIndex);
 			if (collidedEntity->material.kRefract > FLOAT_EPS)
 				lightIntensity += collidedEntity->material.kRefract * traceRay(Ray(collidedPoint, collidedPoint + refractDirection), recursionTime + 1);
-
-			//if (lightIntensity[0] < FLOAT_EPS)
-			//	std::cout << "OK" << std::endl;
-
-
 			return lightIntensity;
 		}
 	private:

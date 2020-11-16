@@ -189,8 +189,8 @@ public:
 	// - 接口函数 -
 	static World* getInstance() { return &World::world; }
 	int run(const std::string &mode);	// 运行函数
-	int runStdMode();	// 运行标准模式函数
-	int runRayMode();	// 运行光线追踪模式函数
+	int runStdMode();						// 运行标准模式函数
+	int runRayMode(bool isSpeedy = false);	// 运行光线追踪模式函数
 private:
 	// - 摄像机 -
 	Camera* camera;		// 摄像机对象指针

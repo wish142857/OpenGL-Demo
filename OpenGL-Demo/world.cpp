@@ -8,7 +8,9 @@ int World::run(const std::string& mode) {
     if (mode == "STD")
         return this->runStdMode();
     if (mode == "RAY")
-        return this->runRayMode();
+        return this->runRayMode(false);
+    if (mode == "SPR")
+        return this->runRayMode(true);
     return this->runStdMode();
 }
 
@@ -371,7 +373,7 @@ int World::runStdMode() {
 /********************
  * [函数] 运行光线追踪模式函数
  ********************/
-int World::runRayMode() {
+int World::runRayMode(bool isSpeedy) {
     // ----------------------
     // [glfw] 初始化、设置与创建窗口
     // ----------------------
@@ -443,6 +445,7 @@ int World::runRayMode() {
     glEnableVertexAttribArray(0);
     // - 构建场景 -
     RayTracing::Scene scene;
+    scene.RAY_TRACING_SPEED_MODE = isSpeedy;
     // - 加载物体模型 -
     scene.addLight(new RayTracing::DirLight(
         glm::vec3(0.2f, 0.2f, 0.2f),
